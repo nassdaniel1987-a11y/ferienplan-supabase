@@ -53,7 +53,7 @@ async function loadAngeboteForDates(dates) {
 export async function subscribeToFerienplan() {
 	const dates = getRelevantDates();
 	const datesToLoad = [dates.heute, dates.morgen];
-	
+
 	// Initiales Laden
 	const initialData = await loadAngeboteForDates(datesToLoad);
 	angebote.set(initialData);
@@ -61,12 +61,17 @@ export async function subscribeToFerienplan() {
 
 	// Entferne alten Channel falls vorhanden
 	if (realtimeChannel) {
-		supabase.removeChannel(realtimeChannel);
+		await supabase.removeChannel(realtimeChannel);
+		realtimeChannel = null;
 	}
 
-	// Realtime Subscription
+	// Realtime Subscription mit besserer Fehlerbehandlung
 	realtimeChannel = supabase
-		.channel('ferienplan-changes')
+		.channel('ferienplan-changes', {
+			config: {
+				broadcast: { self: true }
+			}
+		})
 		.on(
 			'postgres_changes',
 			{
@@ -75,17 +80,29 @@ export async function subscribeToFerienplan() {
 				table: 'angebote'
 			},
 			async (payload) => {
+				console.log('🔄 Realtime Update empfangen:', payload.eventType, payload);
 				// Reload data on any change
 				const updatedData = await loadAngeboteForDates(datesToLoad);
 				angebote.set(updatedData);
 			}
 		)
-		.subscribe();
+		.subscribe((status, err) => {
+			if (status === 'SUBSCRIBED') {
+				console.log('✅ Realtime verbunden!');
+			}
+			if (status === 'CHANNEL_ERROR') {
+				console.error('❌ Realtime Fehler:', err);
+			}
+			if (status === 'TIMED_OUT') {
+				console.error('⏱️ Realtime Timeout');
+			}
+		});
 
 	// Cleanup-Funktion zurückgeben
 	return () => {
 		if (realtimeChannel) {
 			supabase.removeChannel(realtimeChannel);
+			realtimeChannel = null;
 		}
 	};
 }
@@ -162,15 +179,90 @@ export async function deleteAngebot(angebotId, bildUrl) {
 	}
 }
 
-// Lade Bild hoch
-export async function uploadBild(file, angebotId) {
-	const fileExt = file.name.split('.').pop();
+// Hilfsfunktion: Bild verkleinern/komprimieren
+async function resizeImage(file, maxWidth = 1200, maxHeight = 1200, quality = 0.8) {
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.readAsDataURL(file);
+
+		reader.onload = (event) => {
+			const img = new Image();
+			img.src = event.target.result;
+
+			img.onload = () => {
+				// Berechne neue Dimensionen
+				let width = img.width;
+				let height = img.height;
+
+				if (width > height) {
+					if (width > maxWidth) {
+						height = (height * maxWidth) / width;
+						width = maxWidth;
+					}
+				} else {
+					if (height > maxHeight) {
+						width = (width * maxHeight) / height;
+						height = maxHeight;
+					}
+				}
+
+				// Canvas erstellen und Bild zeichnen
+				const canvas = document.createElement('canvas');
+				canvas.width = width;
+				canvas.height = height;
+
+				const ctx = canvas.getContext('2d');
+				ctx.drawImage(img, 0, 0, width, height);
+
+				// Zu Blob konvertieren
+				canvas.toBlob(
+					(blob) => {
+						if (blob) {
+							// Erstelle neue Datei mit komprimierten Daten
+							const resizedFile = new File([blob], file.name, {
+								type: 'image/jpeg',
+								lastModified: Date.now()
+							});
+							resolve(resizedFile);
+						} else {
+							reject(new Error('Fehler beim Komprimieren'));
+						}
+					},
+					'image/jpeg',
+					quality
+				);
+			};
+
+			img.onerror = () => reject(new Error('Fehler beim Laden des Bildes'));
+		};
+
+		reader.onerror = () => reject(new Error('Fehler beim Lesen der Datei'));
+	});
+}
+
+// Lade Bild hoch (mit automatischer Größenanpassung)
+export async function uploadBild(file, angebotId, resize = true) {
+	let fileToUpload = file;
+
+	// Bild verkleinern falls gewünscht
+	if (resize && file.type.startsWith('image/')) {
+		try {
+			console.log('📸 Originalgröße:', (file.size / 1024 / 1024).toFixed(2), 'MB');
+			fileToUpload = await resizeImage(file);
+			console.log('📸 Neue Größe:', (fileToUpload.size / 1024 / 1024).toFixed(2), 'MB');
+		} catch (error) {
+			console.warn('⚠️ Resize fehlgeschlagen, nutze Originalbild:', error);
+			fileToUpload = file;
+		}
+	}
+
+	const fileExt = 'jpg'; // Immer JPG nach Resize
 	const fileName = `${angebotId}_${Date.now()}.${fileExt}`;
 	const filePath = fileName;
 
 	const { error: uploadError } = await supabase.storage
 		.from('ferienplan-bilder')
-		.upload(filePath, file, {
+		.upload(filePath, fileToUpload, {
 			cacheControl: '3600',
 			upsert: false
 		});
