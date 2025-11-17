@@ -257,8 +257,12 @@
 </div>
 
 {#if showAddForm}
+	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<!-- svelte-ignore a11y-no-static-element-interactions -->
 	<div class="modal-overlay" on:click={closeForm}>
-		<div class="modal" on:click|stopPropagation>
+		<!-- svelte-ignore a11y-click-events-have-key-events -->
+		<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+		<div class="modal" role="dialog" aria-modal="true" on:click|stopPropagation>
 			<div class="modal-header">
 				<h2>{editingId ? 'Angebot bearbeiten' : 'Neues Angebot'}</h2>
 				<button class="btn-close" on:click={closeForm}>✕</button>
