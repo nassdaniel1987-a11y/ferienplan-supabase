@@ -27,6 +27,7 @@
 	let editingId = null;
 	let uploading = false;
 	let showImageSettings = false;
+	let imagePreviewUrl = null; // Für Bildvorschau
 
 	onMount(() => {
 		unsubscribe = subscribeToFerienplan();
@@ -80,6 +81,7 @@
 			bildFile: null
 		};
 		editingId = null;
+		imagePreviewUrl = null; // Reset Vorschau
 	}
 
 	function closeForm() {
@@ -155,6 +157,12 @@
 		const file = event.target.files?.[0];
 		if (file && file.type.startsWith('image/')) {
 			formData.bildFile = file;
+
+			// Erstelle Vorschau-URL
+			if (imagePreviewUrl) {
+				URL.revokeObjectURL(imagePreviewUrl); // Alte URL freigeben
+			}
+			imagePreviewUrl = URL.createObjectURL(file);
 		}
 	}
 
@@ -345,6 +353,18 @@
 					/>
 					{#if formData.bildFile}
 						<p class="file-info">📎 {formData.bildFile.name} ({(formData.bildFile.size / 1024 / 1024).toFixed(2)} MB)</p>
+					{/if}
+
+					<!-- Bildvorschau -->
+					{#if imagePreviewUrl || (editingId && getCurrentAngebot(editingId)?.bild_url)}
+						<div class="image-preview">
+							<p class="preview-label">Vorschau:</p>
+							<img
+								src={imagePreviewUrl || getCurrentAngebot(editingId)?.bild_url}
+								alt="Vorschau"
+								class="preview-image"
+							/>
+						</div>
 					{/if}
 
 					<button
@@ -620,7 +640,8 @@
 	.thumbnail img {
 		width: 100%;
 		height: 100%;
-		object-fit: cover;
+		object-fit: contain; /* Bild nicht abschneiden */
+		background: #ffffff;
 	}
 
 	.thumbnail.no-image {
@@ -792,6 +813,30 @@
 		margin-top: 0.5rem;
 		color: #718096;
 		font-size: 0.9rem;
+	}
+
+	.image-preview {
+		margin-top: 1rem;
+		padding: 1rem;
+		background: #f7fafc;
+		border-radius: 8px;
+		border: 2px solid #e2e8f0;
+	}
+
+	.preview-label {
+		margin: 0 0 0.75rem 0;
+		font-weight: 600;
+		color: #4a5568;
+		font-size: 0.9rem;
+	}
+
+	.preview-image {
+		width: 100%;
+		max-height: 300px;
+		object-fit: contain; /* Bild wird nicht abgeschnitten */
+		background: #ffffff;
+		border-radius: 6px;
+		border: 1px solid #cbd5e0;
 	}
 
 	.btn-settings {
