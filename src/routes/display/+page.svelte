@@ -141,11 +141,19 @@
 			return;
 		}
 
+		// WICHTIG: Deaktiviere smooth scrolling während AutoScroll
+		const originalScrollBehavior = scrollContainer.style.scrollBehavior;
+		scrollContainer.style.scrollBehavior = 'auto';
+
 		let isPaused = false;
 		let lastTimestamp = 0;
+		let accumulatedScroll = 0; // Akkumuliere Sub-Pixel Werte
 
-		// Berechne Scroll-Geschwindigkeit basierend auf scrollSpeed
-		const pixelsPerSecond = 100 / (scrollSpeed / 1000); // Basis: 100px pro Sekunde
+		// Schnellere Basis-Geschwindigkeit: 20-100 px/s je nach scrollSpeed Setting
+		// scrollSpeed: 2000ms (schnell) → 50 px/s
+		// scrollSpeed: 8000ms (mittel) → 12.5 px/s
+		// scrollSpeed: 15000ms (langsam) → 6.7 px/s
+		const pixelsPerSecond = Math.max(10, 100 / (scrollSpeed / 1000));
 
 		console.log('🎬 Starte kontinuierliches Scrollen (iOS-kompatibel mit RAF)');
 		console.log('⚡ Scroll-Geschwindigkeit:', scrollSpeed, 'ms →', pixelsPerSecond.toFixed(2), 'px/s');
@@ -165,7 +173,7 @@
 
 			frameCount++;
 			if (frameCount % 60 === 0) { // Log alle 60 Frames (ca. 1 Sekunde)
-				console.log(`📊 Frame ${frameCount}: scrollTop=${scrollContainer.scrollTop.toFixed(0)}, deltaTime=${deltaTime.toFixed(1)}ms`);
+				console.log(`📊 Frame ${frameCount}: scrollTop=${scrollContainer.scrollTop.toFixed(1)}, accumulated=${accumulatedScroll.toFixed(3)}, deltaTime=${deltaTime.toFixed(1)}ms`);
 			}
 
 			if (!isPaused) {
@@ -179,6 +187,7 @@
 
 					setTimeout(() => {
 						scrollContainer.scrollTop = 0;
+						accumulatedScroll = 0;
 						console.log('⬆️ Zurück zum Anfang gesprungen');
 
 						setTimeout(() => {
@@ -190,13 +199,27 @@
 				} else {
 					// Berechne scroll basierend auf verstrichener Zeit
 					const scrollAmount = (pixelsPerSecond * deltaTime) / 1000;
-					scrollContainer.scrollTop = currentScroll + scrollAmount;
+					accumulatedScroll += scrollAmount;
+
+					// Nur scrollen wenn wir mindestens 1 ganzen Pixel haben
+					if (accumulatedScroll >= 1) {
+						const pixelsToScroll = Math.floor(accumulatedScroll);
+						scrollContainer.scrollTop = currentScroll + pixelsToScroll;
+						accumulatedScroll -= pixelsToScroll; // Behalte Rest für nächstes Mal
+					}
 				}
 			}
 
 			// Speichere die ID in globaler Variable UND fordere nächsten Frame an
 			scrollInterval = requestAnimationFrame(animate);
 		}
+
+		// Cleanup-Funktion um scroll-behavior wiederherzustellen
+		const originalStopAutoScroll = window.stopAutoScrollCleanup;
+		window.stopAutoScrollCleanup = () => {
+			scrollContainer.style.scrollBehavior = originalScrollBehavior;
+			if (originalStopAutoScroll) originalStopAutoScroll();
+		};
 
 		// Starte die Animation
 		scrollInterval = requestAnimationFrame(animate);
@@ -236,6 +259,10 @@
 			// Unterstütze beide: RAF und Interval (für Card-Modus)
 			if (scrollType === 'continuous') {
 				cancelAnimationFrame(scrollInterval);
+				// Stelle scroll-behavior wieder her
+				if (typeof window !== 'undefined' && window.stopAutoScrollCleanup) {
+					window.stopAutoScrollCleanup();
+				}
 			} else {
 				clearInterval(scrollInterval);
 			}
