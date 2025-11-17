@@ -1,0 +1,227 @@
+╔══════════════════════════════════════════════════════════════════╗
+║                                                                  ║
+║       🌞 FERIENPLAN DASHBOARD - SUPABASE EDITION 🌞             ║
+║                                                                  ║
+╚══════════════════════════════════════════════════════════════════╝
+
+Willkommen zur SUPABASE-Version deines Ferienplan Dashboards!
+
+═══════════════════════════════════════════════════════════════════
+
+✨ NEU: JETZT MIT SUPABASE! ✨
+
+Supabase ist einfacher und schneller als Firebase:
+- ⚡ Nur 2 statt 6 Environment Variables
+- ⚡ Schnelleres Setup (15 statt 20 Min)
+- ⚡ Unbegrenzte API-Requests (Firebase: 50k/Tag)
+- ⚡ PostgreSQL statt NoSQL
+- ⚡ Open Source
+
+═══════════════════════════════════════════════════════════════════
+
+📦 WAS IST ENTHALTEN?
+
+✅ Vollständiges SvelteKit-Projekt
+✅ TV-Display (Vollbild, modern, auto-update)
+✅ Admin-Panel (iPad-optimiert)
+✅ Supabase Backend (PostgreSQL + Storage)
+✅ Netlify-Ready
+✅ Komplett dokumentiert auf Deutsch
+
+═══════════════════════════════════════════════════════════════════
+
+🚀 SCHNELLSTART
+
+Option 1: SUPER-SCHNELL (15 Minuten)
+  → Öffne: SUPABASE-ANLEITUNG.md
+  → Folge den Schritten
+  → Fertig!
+
+Option 2: ÜBERSICHT
+  → Öffne: README.md
+  → Technische Details
+  → Alle Features erklärt
+
+═══════════════════════════════════════════════════════════════════
+
+📁 WICHTIGE DATEIEN
+
+  📖 SUPABASE-ANLEITUNG.md    → HAUPTANLEITUNG (Start hier!)
+  📖 README.md                 → Projekt-Übersicht
+  
+  ⚙️ package.json              → Dependencies
+  ⚙️ .env.example              → Supabase Config Vorlage
+  
+  📂 src/
+     ├── lib/supabase.js       → Supabase Client
+     ├── routes/display/       → TV-Ansicht
+     └── routes/admin/         → Admin-Panel
+
+═══════════════════════════════════════════════════════════════════
+
+🎯 WAS MUSS ICH TUN?
+
+1. ✅ Dateien entpackt? → SUPER!
+
+2. 📖 Anleitung lesen:
+   → Öffne SUPABASE-ANLEITUNG.md
+
+3. 🎯 Supabase einrichten (15 Min):
+   → Projekt erstellen
+   → Tabelle erstellen
+   → Storage aktivieren
+   → URL & Keys kopieren
+
+4. 💻 Lokal testen (5 Min):
+   → npm install
+   → .env erstellen
+   → npm run dev
+
+5. 🌐 Deployen (10 Min):
+   → GitHub hochladen
+   → Mit Netlify verbinden
+   → Fertig!
+
+═══════════════════════════════════════════════════════════════════
+
+⚡ ERSTE SCHRITTE
+
+Terminal öffnen im Projekt-Verzeichnis:
+
+  cd ferienplan-supabase
+
+Dependencies installieren:
+
+  npm install
+
+.env Datei erstellen:
+
+  cp .env.example .env
+
+Jetzt .env bearbeiten und Supabase-Daten eintragen!
+
+Dann starten:
+
+  npm run dev
+
+→ Öffne http://localhost:5173/admin
+→ Öffne http://localhost:5173/display
+
+═══════════════════════════════════════════════════════════════════
+
+🎨 FEATURES
+
+Display (/display):
+  • Zeigt Heute + Morgen
+  • Große, lesbare Schrift
+  • Bilder für Angebote
+  • Echtzeit-Updates via Supabase Realtime
+  • Moderne Farbverläufe
+
+Admin (/admin):
+  • Datum auswählen
+  • Angebote erstellen/bearbeiten/löschen
+  • Bilder hochladen zu Supabase Storage
+  • Sichtbarkeit togglen
+  • iPad-optimiert
+
+═══════════════════════════════════════════════════════════════════
+
+⚡ WARUM SUPABASE?
+
+Firebase vs Supabase - Die Unterschiede:
+
+Environment Variables:
+  Firebase: 6 Variablen    ❌
+  Supabase: 2 Variablen    ✅
+
+Setup-Zeit:
+  Firebase: ~20 Min        ⏱️
+  Supabase: ~15 Min        ⚡
+
+API-Limits:
+  Firebase: 50k/Tag        ⚠️
+  Supabase: Unbegrenzt     ✅
+
+Datenbank:
+  Firebase: NoSQL (komplex)
+  Supabase: SQL (einfach)  ✅
+
+Open Source:
+  Firebase: Nein           ❌
+  Supabase: Ja             ✅
+
+→ Lies FIREBASE-VS-SUPABASE.md für Details!
+
+═══════════════════════════════════════════════════════════════════
+
+🗄️ DATENBANK-STRUKTUR
+
+Tabelle: angebote
+
+Spalten:
+  • id (auto)
+  • created_at (auto)
+  • datum (YYYY-MM-DD)
+  • titel (Text, required)
+  • beschreibung (Text)
+  • uhrzeit (Text, z.B. "14:00")
+  • ort (Text)
+  • betreuer (Text)
+  • bild_url (Text, URL zu Storage)
+  • sichtbar (Boolean)
+
+Storage Bucket: ferienplan-bilder
+  • Public
+  • Für alle Bilder
+
+═══════════════════════════════════════════════════════════════════
+
+🆘 HILFE BENÖTIGT?
+
+Problem: Tabelle nicht gefunden
+  → Lösung: Siehe SUPABASE-ANLEITUNG.md → Schritt 1.4
+
+Problem: Keine Daten sichtbar
+  → Lösung: Environment Variables gesetzt?
+
+Problem: Bild-Upload schlägt fehl
+  → Lösung: Storage Bucket public?
+
+Alle Lösungen in SUPABASE-ANLEITUNG.md!
+
+═══════════════════════════════════════════════════════════════════
+
+💡 TIPP
+
+Die SUPABASE-ANLEITUNG.md hat JEDEN EINZELNEN KLICK erklärt!
+
+Perfekt für Einsteiger.
+
+═══════════════════════════════════════════════════════════════════
+
+📊 SUPABASE FREE TIER
+
+Was du bekommst (kostenlos):
+  • 500 MB Datenbank
+  • 1 GB Storage
+  • 5 GB Bandwidth/Monat
+  • Unbegrenzte API-Requests
+  • 200 Realtime-Connections
+  • Community Support
+
+→ Mehr als genug für Schulen!
+
+═══════════════════════════════════════════════════════════════════
+
+🎉 LOS GEHT'S!
+
+1. Öffne SUPABASE-ANLEITUNG.md
+2. Folge Schritt für Schritt
+3. In 30 Minuten bist du fertig!
+
+═══════════════════════════════════════════════════════════════════
+
+            🚀 VIEL ERFOLG MIT SUPABASE! 🚀
+
+═══════════════════════════════════════════════════════════════════
