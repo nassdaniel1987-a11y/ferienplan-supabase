@@ -65,13 +65,11 @@ export async function subscribeToFerienplan() {
 		realtimeChannel = null;
 	}
 
-	// Realtime Subscription mit besserer Fehlerbehandlung
+	console.log('🔌 Starte Realtime Subscription...');
+
+	// Realtime Subscription mit verbesserter Fehlerbehandlung
 	realtimeChannel = supabase
-		.channel('ferienplan-changes', {
-			config: {
-				broadcast: { self: true }
-			}
-		})
+		.channel('ferienplan-changes')
 		.on(
 			'postgres_changes',
 			{
@@ -80,26 +78,43 @@ export async function subscribeToFerienplan() {
 				table: 'angebote'
 			},
 			async (payload) => {
-				console.log('🔄 Realtime Update empfangen:', payload.eventType, payload);
+				console.log('🔄 Realtime Update empfangen!', {
+					event: payload.eventType,
+					new: payload.new,
+					old: payload.old
+				});
+
 				// Reload data on any change
 				const updatedData = await loadAngeboteForDates(datesToLoad);
 				angebote.set(updatedData);
+				console.log('✨ Daten aktualisiert!');
 			}
 		)
-		.subscribe((status, err) => {
+		.subscribe(async (status, err) => {
+			console.log('📡 Realtime Status:', status);
+
 			if (status === 'SUBSCRIBED') {
-				console.log('✅ Realtime verbunden!');
+				console.log('✅ Realtime erfolgreich verbunden!');
+				console.log('👂 Höre auf Änderungen in Tabelle "angebote"...');
 			}
+
 			if (status === 'CHANNEL_ERROR') {
-				console.error('❌ Realtime Fehler:', err);
+				console.error('❌ Realtime Verbindungsfehler:', err);
+				console.error('💡 Überprüfe: Database → Replication → "angebote" muss aktiviert sein!');
 			}
+
 			if (status === 'TIMED_OUT') {
-				console.error('⏱️ Realtime Timeout');
+				console.error('⏱️ Realtime Timeout - Verbindung fehlgeschlagen');
+			}
+
+			if (status === 'CLOSED') {
+				console.warn('🔌 Realtime Verbindung geschlossen');
 			}
 		});
 
 	// Cleanup-Funktion zurückgeben
 	return () => {
+		console.log('🛑 Realtime Subscription wird beendet...');
 		if (realtimeChannel) {
 			supabase.removeChannel(realtimeChannel);
 			realtimeChannel = null;
