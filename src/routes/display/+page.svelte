@@ -102,13 +102,16 @@
 
 	function toggleAutoScroll() {
 		autoScroll = !autoScroll;
+		console.log('🔄 AutoScroll Toggle:', autoScroll ? 'AN' : 'AUS');
 		if (typeof window !== 'undefined') {
 			localStorage.setItem('autoScroll', autoScroll.toString());
 		}
 
 		if (autoScroll) {
+			console.log('▶️ Starte AutoScroll...');
 			startAutoScroll();
 		} else {
+			console.log('⏹️ Stoppe AutoScroll...');
 			stopAutoScroll();
 		}
 	}
@@ -116,14 +119,17 @@
 	function startAutoScroll() {
 		if (typeof window === 'undefined') return;
 
+		console.log('🚀 startAutoScroll aufgerufen, Typ:', scrollType);
 		stopAutoScroll(); // Clear existing interval
 		currentScrollIndex = 0;
 
 		if (scrollType === 'continuous') {
 			// Kontinuierliches, sanftes Scrollen
+			console.log('→ Rufe startContinuousScroll auf...');
 			startContinuousScroll();
 		} else {
 			// Karten-basiertes Scrollen
+			console.log('→ Rufe startCardScroll auf...');
 			startCardScroll();
 		}
 	}
@@ -137,7 +143,6 @@
 
 		let isPaused = false;
 		let lastTimestamp = 0;
-		let animationFrameId = null;
 
 		// Berechne Scroll-Geschwindigkeit basierend auf scrollSpeed
 		const pixelsPerSecond = 100 / (scrollSpeed / 1000); // Basis: 100px pro Sekunde
@@ -149,10 +154,19 @@
 		console.log('📊 Scrollbare Distanz:', scrollContainer.scrollHeight - scrollContainer.clientHeight);
 		console.log('🍎 User Agent:', navigator.userAgent.includes('iPad') ? 'iPad' : navigator.userAgent.includes('iPhone') ? 'iPhone' : 'Anderes Gerät');
 
+		let frameCount = 0;
 		function animate(timestamp) {
-			if (!lastTimestamp) lastTimestamp = timestamp;
+			if (!lastTimestamp) {
+				lastTimestamp = timestamp;
+				console.log('🎞️ Erste Animation Frame gestartet');
+			}
 			const deltaTime = timestamp - lastTimestamp;
 			lastTimestamp = timestamp;
+
+			frameCount++;
+			if (frameCount % 60 === 0) { // Log alle 60 Frames (ca. 1 Sekunde)
+				console.log(`📊 Frame ${frameCount}: scrollTop=${scrollContainer.scrollTop.toFixed(0)}, deltaTime=${deltaTime.toFixed(1)}ms`);
+			}
 
 			if (!isPaused) {
 				const currentScroll = scrollContainer.scrollTop;
@@ -180,15 +194,12 @@
 				}
 			}
 
-			// Nächsten Frame anfordern
-			animationFrameId = requestAnimationFrame(animate);
+			// Speichere die ID in globaler Variable UND fordere nächsten Frame an
+			scrollInterval = requestAnimationFrame(animate);
 		}
 
 		// Starte die Animation
-		animationFrameId = requestAnimationFrame(animate);
-
-		// Speichere die ID für späteres Stoppen
-		scrollInterval = animationFrameId;
+		scrollInterval = requestAnimationFrame(animate);
 	}
 
 	function startCardScroll() {
