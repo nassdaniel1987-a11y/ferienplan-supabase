@@ -122,43 +122,52 @@
 
 	function startContinuousScroll() {
 		const scrollContainer = document.querySelector('main');
-		if (!scrollContainer) return;
+		if (!scrollContainer) {
+			console.warn('⚠️ Scroll-Container nicht gefunden');
+			return;
+		}
 
-		let scrollPosition = 0;
-		const scrollStep = 1; // Pixel pro Frame
-		const pauseDuration = scrollSpeed; // Pause am Ende
 		let isPaused = false;
+		const scrollStep = 1; // Pixel pro Frame
+
+		console.log('🎬 Starte kontinuierliches Scrollen');
+		console.log('📏 Container Höhe:', scrollContainer.scrollHeight);
+		console.log('📐 Sichtbare Höhe:', scrollContainer.clientHeight);
+		console.log('📊 Scrollbare Distanz:', scrollContainer.scrollHeight - scrollContainer.clientHeight);
 
 		scrollInterval = setInterval(() => {
 			if (isPaused) return;
 
+			// Lese aktuellen Scroll-Stand aus
+			const currentScroll = scrollContainer.scrollTop;
 			const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
 
-			if (scrollPosition >= maxScroll) {
+			if (currentScroll >= maxScroll - 10) { // 10px Toleranz
 				// Am Ende angekommen - Pause und zurück nach oben
+				console.log('🔄 Ende erreicht - Pause und zurück zum Anfang');
 				isPaused = true;
+
 				setTimeout(() => {
-					scrollContainer.scrollTo({
-						top: 0,
-						behavior: 'smooth'
-					});
-					scrollPosition = 0;
+					scrollContainer.scrollTop = 0;
+					console.log('⬆️ Zurück zum Anfang gesprungen');
+
 					setTimeout(() => {
 						isPaused = false;
-					}, 2000);
-				}, pauseDuration);
+						console.log('▶️ Scrollen fortgesetzt');
+					}, 2000); // 2 Sekunden Pause oben
+				}, scrollSpeed); // Pause am Ende
 			} else {
-				// Sanft weiterscrollen
-				scrollPosition += scrollStep;
-				scrollContainer.scrollTo({
-					top: scrollPosition,
-					behavior: 'auto' // Kein smooth hier, da wir selbst animieren
-				});
+				// Sanft weiterscrollen - erhöhe aktuellen scrollTop
+				scrollContainer.scrollTop = currentScroll + scrollStep;
 			}
 		}, 30); // ~33 FPS für flüssige Animation
 	}
 
 	function startCardScroll() {
+		console.log('🎴 Starte Karten-basiertes Scrollen');
+		console.log('📋 Scroll-Modus:', scrollMode);
+		console.log('⏱️ Geschwindigkeit:', scrollSpeed, 'ms');
+
 		scrollInterval = setInterval(() => {
 			let cards;
 
@@ -172,10 +181,13 @@
 
 			if (cards.length > 0) {
 				currentScrollIndex = (currentScrollIndex + 1) % cards.length;
+				console.log(`➡️ Scrolle zu Karte ${currentScrollIndex + 1}/${cards.length}`);
 				cards[currentScrollIndex]?.scrollIntoView({
 					behavior: 'smooth',
 					block: 'center'
 				});
+			} else {
+				console.warn('⚠️ Keine Karten gefunden zum Scrollen');
 			}
 		}, scrollSpeed);
 	}
@@ -867,6 +879,11 @@
 		padding: 3rem 4rem;
 		max-width: 1800px;
 		margin: 0 auto;
+		/* Wichtig für AutoScroll: Feste Höhe und Overflow */
+		height: calc(100vh - 120px); /* 100vh minus Header-Höhe */
+		overflow-y: auto;
+		overflow-x: hidden;
+		scroll-behavior: smooth;
 	}
 
 	.days-container {
@@ -1057,6 +1074,7 @@
 
 		main {
 			padding: 2rem;
+			height: calc(100vh - 100px); /* Angepasst für kleinere Header */
 		}
 
 		.day-section {
