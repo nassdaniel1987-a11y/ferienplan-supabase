@@ -50,6 +50,7 @@ async function loadAngeboteForDates(dates) {
 }
 
 let pollingInterval = null;
+let realtimeWorking = false; // Flag ob Realtime tatsächlich Events empfängt
 
 // Abonniere Ferienplan-Daten mit Realtime + Polling Fallback
 export async function subscribeToFerienplan(usePolling = true) {
@@ -73,6 +74,9 @@ export async function subscribeToFerienplan(usePolling = true) {
 		pollingInterval = null;
 	}
 
+	// Reset Realtime-Flag
+	realtimeWorking = false;
+
 	console.log('🔌 Starte Daten-Synchronisation...');
 
 	// Versuche Realtime zu nutzen (funktioniert nur wenn aktiviert)
@@ -94,6 +98,16 @@ export async function subscribeToFerienplan(usePolling = true) {
 						old: payload.old
 					});
 
+					// Erstes Realtime-Event empfangen - Polling kann gestoppt werden
+					if (!realtimeWorking) {
+						realtimeWorking = true;
+						console.log('✅ Realtime funktioniert! Stoppe Polling...');
+						if (pollingInterval) {
+							clearInterval(pollingInterval);
+							pollingInterval = null;
+						}
+					}
+
 					// Reload data on any change
 					const updatedData = await loadAngeboteForDates(datesToLoad);
 					angebote.set(updatedData);
@@ -104,14 +118,10 @@ export async function subscribeToFerienplan(usePolling = true) {
 				console.log('📡 Realtime Status:', status);
 
 				if (status === 'SUBSCRIBED') {
-					console.log('✅ Realtime erfolgreich verbunden!');
+					console.log('✅ Realtime Subscription aktiv');
 					console.log('👂 Höre auf Änderungen in Tabelle "angebote"...');
-					console.log('💡 Polling ist deaktiviert (Realtime aktiv)');
-					// Realtime funktioniert, kein Polling nötig
-					if (pollingInterval) {
-						clearInterval(pollingInterval);
-						pollingInterval = null;
-					}
+					console.log('💡 Warte auf erstes Event um Polling zu deaktivieren...');
+					// Polling läuft weiter bis erstes Event empfangen wurde
 				}
 
 				if (status === 'CHANNEL_ERROR') {
@@ -133,13 +143,13 @@ export async function subscribeToFerienplan(usePolling = true) {
 		startPolling(datesToLoad);
 	}
 
-	// Starte Polling als Backup (falls Realtime nicht sofort verbindet)
+	// Starte Polling sofort (wird erst gestoppt wenn erstes Realtime-Event kommt)
 	if (usePolling) {
-		console.log('🔄 Starte Polling-Backup (wird gestoppt wenn Realtime verbindet)');
+		console.log('🔄 Starte Polling (wird gestoppt wenn Realtime Event empfangen wird)');
 		setTimeout(() => {
-			// Nur starten wenn Realtime noch nicht verbunden
-			if (!realtimeChannel || realtimeChannel.state !== 'joined') {
-				console.log('💡 Realtime nicht verbunden - aktiviere Polling');
+			// Starte Polling falls noch kein Realtime-Event empfangen wurde
+			if (!realtimeWorking) {
+				console.log('💡 Kein Realtime Event empfangen - aktiviere Polling');
 				startPolling(datesToLoad);
 			}
 		}, 3000);
@@ -313,14 +323,21 @@ async function resizeImage(file, maxWidth = 1200, maxHeight = 1200, quality = 0.
 }
 
 // Lade Bild hoch (mit automatischer Größenanpassung)
-export async function uploadBild(file, angebotId, resize = true) {
+export async function uploadBild(file, angebotId, options = {}) {
+	const {
+		resize = true,
+		maxWidth = 1200,
+		maxHeight = 1200,
+		quality = 0.8
+	} = options;
+
 	let fileToUpload = file;
 
 	// Bild verkleinern falls gewünscht
 	if (resize && file.type.startsWith('image/')) {
 		try {
 			console.log('📸 Originalgröße:', (file.size / 1024 / 1024).toFixed(2), 'MB');
-			fileToUpload = await resizeImage(file);
+			fileToUpload = await resizeImage(file, maxWidth, maxHeight, quality);
 			console.log('📸 Neue Größe:', (fileToUpload.size / 1024 / 1024).toFixed(2), 'MB');
 		} catch (error) {
 			console.warn('⚠️ Resize fehlgeschlagen, nutze Originalbild:', error);
