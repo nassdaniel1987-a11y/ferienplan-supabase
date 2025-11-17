@@ -15,9 +15,18 @@
 		betreuer: '',
 		bildFile: null
 	};
-	
+
+	// Bildgrößen-Einstellungen
+	let imageSettings = {
+		resize: true,
+		maxWidth: 1200,
+		maxHeight: 1200,
+		quality: 80 // 0-100 für UI, wird zu 0.0-1.0 konvertiert
+	};
+
 	let editingId = null;
 	let uploading = false;
+	let showImageSettings = false;
 
 	onMount(() => {
 		unsubscribe = subscribeToFerienplan();
@@ -93,7 +102,12 @@
 			// Lade neues Bild hoch falls vorhanden
 			if (formData.bildFile) {
 				const angebotId = editingId || `temp_${Date.now()}`;
-				bildUrl = await uploadBild(formData.bildFile, angebotId);
+				bildUrl = await uploadBild(formData.bildFile, angebotId, {
+					resize: imageSettings.resize,
+					maxWidth: imageSettings.maxWidth,
+					maxHeight: imageSettings.maxHeight,
+					quality: imageSettings.quality / 100 // Konvertiere 0-100 zu 0.0-1.0
+				});
 			}
 
 			const angebotData = {
@@ -323,14 +337,75 @@
 
 				<div class="form-group">
 					<label for="bild">Bild</label>
-					<input 
-						type="file" 
-						id="bild" 
+					<input
+						type="file"
+						id="bild"
 						accept="image/*"
 						on:change={handleFileChange}
 					/>
 					{#if formData.bildFile}
-						<p class="file-info">📎 {formData.bildFile.name}</p>
+						<p class="file-info">📎 {formData.bildFile.name} ({(formData.bildFile.size / 1024 / 1024).toFixed(2)} MB)</p>
+					{/if}
+
+					<button
+						type="button"
+						class="btn-settings"
+						on:click={() => showImageSettings = !showImageSettings}
+					>
+						⚙️ Bildgröße einstellen
+					</button>
+
+					{#if showImageSettings}
+						<div class="image-settings">
+							<div class="setting-row">
+								<label>
+									<input type="checkbox" bind:checked={imageSettings.resize} />
+									Bild automatisch verkleinern
+								</label>
+							</div>
+
+							{#if imageSettings.resize}
+								<div class="setting-row">
+									<label for="maxWidth">Max. Breite (px):</label>
+									<input
+										type="number"
+										id="maxWidth"
+										bind:value={imageSettings.maxWidth}
+										min="100"
+										max="4000"
+										step="100"
+									/>
+								</div>
+
+								<div class="setting-row">
+									<label for="maxHeight">Max. Höhe (px):</label>
+									<input
+										type="number"
+										id="maxHeight"
+										bind:value={imageSettings.maxHeight}
+										min="100"
+										max="4000"
+										step="100"
+									/>
+								</div>
+
+								<div class="setting-row">
+									<label for="quality">Qualität ({imageSettings.quality}%):</label>
+									<input
+										type="range"
+										id="quality"
+										bind:value={imageSettings.quality}
+										min="10"
+										max="100"
+										step="5"
+									/>
+								</div>
+
+								<p class="settings-hint">
+									💡 Empfohlen: 1200x1200px bei 80% Qualität
+								</p>
+							{/if}
+						</div>
 					{/if}
 				</div>
 
@@ -717,6 +792,72 @@
 		margin-top: 0.5rem;
 		color: #718096;
 		font-size: 0.9rem;
+	}
+
+	.btn-settings {
+		margin-top: 0.75rem;
+		background: #e2e8f0;
+		color: #2d3748;
+		border: none;
+		padding: 0.5rem 1rem;
+		border-radius: 6px;
+		font-size: 0.9rem;
+		cursor: pointer;
+		transition: background 0.2s;
+		width: 100%;
+	}
+
+	.btn-settings:hover {
+		background: #cbd5e0;
+	}
+
+	.image-settings {
+		margin-top: 1rem;
+		padding: 1rem;
+		background: #f7fafc;
+		border-radius: 8px;
+		border: 2px solid #e2e8f0;
+	}
+
+	.setting-row {
+		margin-bottom: 1rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.setting-row:last-child {
+		margin-bottom: 0;
+	}
+
+	.setting-row label {
+		font-size: 0.9rem;
+		font-weight: 500;
+		color: #4a5568;
+	}
+
+	.setting-row input[type="checkbox"] {
+		width: auto;
+		margin-right: 0.5rem;
+	}
+
+	.setting-row input[type="number"] {
+		padding: 0.5rem;
+	}
+
+	.setting-row input[type="range"] {
+		width: 100%;
+		cursor: pointer;
+	}
+
+	.settings-hint {
+		margin: 1rem 0 0 0;
+		padding: 0.75rem;
+		background: #edf2f7;
+		border-radius: 6px;
+		color: #4a5568;
+		font-size: 0.85rem;
+		border-left: 3px solid #667eea;
 	}
 
 	.form-actions {
