@@ -16,6 +16,7 @@
 	let scrollSpeed = 5000; // Millisekunden
 	let scrollDirection = 'vertical'; // vertical, horizontal
 	let scrollMode = 'all'; // all, heute, morgen
+	let scrollType = 'continuous'; // continuous oder cards
 
 	onMount(async () => {
 		// Subscribe to Supabase Realtime
@@ -38,6 +39,7 @@
 			scrollSpeed = parseInt(localStorage.getItem('scrollSpeed') || '5000');
 			scrollDirection = localStorage.getItem('scrollDirection') || 'vertical';
 			scrollMode = localStorage.getItem('scrollMode') || 'all';
+			scrollType = localStorage.getItem('scrollType') || 'continuous';
 
 			if (autoScroll) {
 				startAutoScroll();
@@ -109,6 +111,54 @@
 		stopAutoScroll(); // Clear existing interval
 		currentScrollIndex = 0;
 
+		if (scrollType === 'continuous') {
+			// Kontinuierliches, sanftes Scrollen
+			startContinuousScroll();
+		} else {
+			// Karten-basiertes Scrollen
+			startCardScroll();
+		}
+	}
+
+	function startContinuousScroll() {
+		const scrollContainer = document.querySelector('main');
+		if (!scrollContainer) return;
+
+		let scrollPosition = 0;
+		const scrollStep = 1; // Pixel pro Frame
+		const pauseDuration = scrollSpeed; // Pause am Ende
+		let isPaused = false;
+
+		scrollInterval = setInterval(() => {
+			if (isPaused) return;
+
+			const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+
+			if (scrollPosition >= maxScroll) {
+				// Am Ende angekommen - Pause und zurück nach oben
+				isPaused = true;
+				setTimeout(() => {
+					scrollContainer.scrollTo({
+						top: 0,
+						behavior: 'smooth'
+					});
+					scrollPosition = 0;
+					setTimeout(() => {
+						isPaused = false;
+					}, 2000);
+				}, pauseDuration);
+			} else {
+				// Sanft weiterscrollen
+				scrollPosition += scrollStep;
+				scrollContainer.scrollTo({
+					top: scrollPosition,
+					behavior: 'auto' // Kein smooth hier, da wir selbst animieren
+				});
+			}
+		}, 30); // ~33 FPS für flüssige Animation
+	}
+
+	function startCardScroll() {
 		scrollInterval = setInterval(() => {
 			let cards;
 
@@ -153,6 +203,16 @@
 			localStorage.setItem('scrollMode', scrollMode);
 		}
 		currentScrollIndex = 0;
+		if (autoScroll) {
+			startAutoScroll();
+		}
+	}
+
+	function updateScrollType(newType) {
+		scrollType = newType;
+		if (typeof window !== 'undefined') {
+			localStorage.setItem('scrollType', scrollType);
+		}
 		if (autoScroll) {
 			startAutoScroll();
 		}
@@ -245,33 +305,56 @@
 							</div>
 						</div>
 
-						<!-- Scroll-Modus -->
+						<!-- Scroll-Art -->
 						<div class="setting-group">
-							<span class="setting-label">📋 Scroll-Bereich</span>
-							<div class="button-group">
+							<span class="setting-label">🎬 Scroll-Art</span>
+							<div class="button-group-2">
 								<button
 									class="option-btn"
-									class:active={scrollMode === 'all'}
-									on:click={() => updateScrollMode('all')}
+									class:active={scrollType === 'continuous'}
+									on:click={() => updateScrollType('continuous')}
 								>
-									Alle
+									Kontinuierlich (sanft)
 								</button>
 								<button
 									class="option-btn"
-									class:active={scrollMode === 'heute'}
-									on:click={() => updateScrollMode('heute')}
+									class:active={scrollType === 'cards'}
+									on:click={() => updateScrollType('cards')}
 								>
-									Nur Heute
-								</button>
-								<button
-									class="option-btn"
-									class:active={scrollMode === 'morgen'}
-									on:click={() => updateScrollMode('morgen')}
-								>
-									Nur Morgen
+									Karten-Navigation
 								</button>
 							</div>
 						</div>
+
+						<!-- Scroll-Modus (nur für Karten-Modus) -->
+						{#if scrollType === 'cards'}
+							<div class="setting-group">
+								<span class="setting-label">📋 Scroll-Bereich</span>
+								<div class="button-group">
+									<button
+										class="option-btn"
+										class:active={scrollMode === 'all'}
+										on:click={() => updateScrollMode('all')}
+									>
+										Alle
+									</button>
+									<button
+										class="option-btn"
+										class:active={scrollMode === 'heute'}
+										on:click={() => updateScrollMode('heute')}
+									>
+										Nur Heute
+									</button>
+									<button
+										class="option-btn"
+										class:active={scrollMode === 'morgen'}
+										on:click={() => updateScrollMode('morgen')}
+									>
+										Nur Morgen
+									</button>
+								</div>
+							</div>
+						{/if}
 
 						<!-- Tipps für iPad/TV -->
 						<div class="setting-group tips">
@@ -698,6 +781,13 @@
 		margin-top: 1rem;
 	}
 
+	.button-group-2 {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 1rem;
+		margin-top: 1rem;
+	}
+
 	.option-btn {
 		background: rgba(0, 0, 0, 0.05);
 		border: 2px solid rgba(0, 0, 0, 0.1);
@@ -977,7 +1067,8 @@
 			max-width: 95%;
 		}
 
-		.button-group {
+		.button-group,
+		.button-group-2 {
 			grid-template-columns: 1fr;
 		}
 	}
