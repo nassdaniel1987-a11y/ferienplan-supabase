@@ -41,6 +41,14 @@
 			scrollMode = localStorage.getItem('scrollMode') || 'all';
 			scrollType = localStorage.getItem('scrollType') || 'continuous';
 
+			// iPad Detection - füge CSS Klasse hinzu
+			const isIPad = navigator.userAgent.includes('iPad') ||
+			               (navigator.userAgent.includes('Macintosh') && navigator.maxTouchPoints > 1);
+			if (isIPad) {
+				document.body.classList.add('is-ipad');
+				console.log('📱 iPad erkannt - verwende iPad-optimierte Größen');
+			}
+
 			if (autoScroll) {
 				startAutoScroll();
 			}
@@ -1137,5 +1145,88 @@
 			width: 40px;
 			height: 40px;
 		}
+	}
+
+	/* iPad-spezifische Größen (noch kleiner für TV-Mirroring) */
+	:global(body.is-ipad) h1 {
+		font-size: 1rem !important;
+	}
+
+	:global(body.is-ipad) .current-time {
+		font-size: 0.85rem !important;
+	}
+
+	:global(body.is-ipad) .day-header h2 {
+		font-size: 0.85rem !important;
+	}
+
+	:global(body.is-ipad) .day-header .date {
+		font-size: 0.7rem !important;
+	}
+
+	:global(body.is-ipad) .day-section {
+		padding: 0.5rem !important;
+	}
+
+	:global(body.is-ipad) .day-header {
+		margin-bottom: 0.5rem !important;
+		padding-bottom: 0.35rem !important;
+	}
+
+	:global(body.is-ipad) .angebot-image {
+		height: 60px !important;
+	}
+
+	:global(body.is-ipad) .angebot-content {
+		padding: 0.5rem !important;
+	}
+
+	:global(body.is-ipad) .angebot-content h3 {
+		font-size: 0.75rem !important;
+		margin-bottom: 0.35rem !important;
+	}
+
+	:global(body.is-ipad) .beschreibung {
+		font-size: 0.65rem !important;
+		margin-bottom: 0.35rem !important;
+	}
+
+	:global(body.is-ipad) .detail {
+		font-size: 0.65rem !important;
+	}
+
+	:global(body.is-ipad) .detail .icon {
+		font-size: 0.8rem !important;
+		min-width: 1.2rem !important;
+	}
+
+	:global(body.is-ipad) .angebot-details {
+		gap: 0.2rem !important;
+	}
+
+	:global(body.is-ipad) .angebote-grid {
+		gap: 0.35rem !important;
+	}
+
+	:global(body.is-ipad) .days-container {
+		gap: 1rem !important;
+	}
+
+	:global(body.is-ipad) main {
+		padding: 2rem !important;
+	}
+
+	:global(body.is-ipad) .control-btn {
+		width: 50px !important;
+		height: 50px !important;
+		font-size: 1.5rem !important;
+	}
+
+	:global(body.is-ipad) header {
+		padding: 1.5rem 2rem !important;
+	}
+
+	:global(body.is-ipad) .header-controls {
+		gap: 1rem !important;
 	}
 </style>
