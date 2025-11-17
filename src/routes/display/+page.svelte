@@ -31,28 +31,33 @@
 			currentTime = new Date();
 		}, 60000);
 
-		// Einstellungen aus localStorage laden
-		darkMode = localStorage.getItem('darkMode') === 'true';
-		autoScroll = localStorage.getItem('autoScroll') === 'true';
-		scrollSpeed = parseInt(localStorage.getItem('scrollSpeed') || '5000');
-		scrollDirection = localStorage.getItem('scrollDirection') || 'vertical';
-		scrollMode = localStorage.getItem('scrollMode') || 'all';
+		// Einstellungen aus localStorage laden (nur im Browser!)
+		if (typeof window !== 'undefined') {
+			darkMode = localStorage.getItem('darkMode') === 'true';
+			autoScroll = localStorage.getItem('autoScroll') === 'true';
+			scrollSpeed = parseInt(localStorage.getItem('scrollSpeed') || '5000');
+			scrollDirection = localStorage.getItem('scrollDirection') || 'vertical';
+			scrollMode = localStorage.getItem('scrollMode') || 'all';
 
-		if (autoScroll) {
-			startAutoScroll();
+			if (autoScroll) {
+				startAutoScroll();
+			}
+
+			// Fullscreen Event Listener
+			document.addEventListener('fullscreenchange', handleFullscreenChange);
+			document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
 		}
-
-		// Fullscreen Event Listener
-		document.addEventListener('fullscreenchange', handleFullscreenChange);
-		document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
 	});
 
 	onDestroy(() => {
 		if (unsubscribe) unsubscribe();
 		if (timeInterval) clearInterval(timeInterval);
 		if (scrollInterval) clearInterval(scrollInterval);
-		document.removeEventListener('fullscreenchange', handleFullscreenChange);
-		document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+		if (typeof window !== 'undefined') {
+			document.removeEventListener('fullscreenchange', handleFullscreenChange);
+			document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+		}
 	});
 
 	function handleFullscreenChange() {
@@ -80,12 +85,16 @@
 
 	function toggleDarkMode() {
 		darkMode = !darkMode;
-		localStorage.setItem('darkMode', darkMode.toString());
+		if (typeof window !== 'undefined') {
+			localStorage.setItem('darkMode', darkMode.toString());
+		}
 	}
 
 	function toggleAutoScroll() {
 		autoScroll = !autoScroll;
-		localStorage.setItem('autoScroll', autoScroll.toString());
+		if (typeof window !== 'undefined') {
+			localStorage.setItem('autoScroll', autoScroll.toString());
+		}
 
 		if (autoScroll) {
 			startAutoScroll();
@@ -95,6 +104,8 @@
 	}
 
 	function startAutoScroll() {
+		if (typeof window === 'undefined') return;
+
 		stopAutoScroll(); // Clear existing interval
 		currentScrollIndex = 0;
 
@@ -128,7 +139,9 @@
 
 	function updateScrollSpeed(newSpeed) {
 		scrollSpeed = newSpeed;
-		localStorage.setItem('scrollSpeed', scrollSpeed.toString());
+		if (typeof window !== 'undefined') {
+			localStorage.setItem('scrollSpeed', scrollSpeed.toString());
+		}
 		if (autoScroll) {
 			startAutoScroll();
 		}
@@ -136,7 +149,9 @@
 
 	function updateScrollMode(newMode) {
 		scrollMode = newMode;
-		localStorage.setItem('scrollMode', scrollMode);
+		if (typeof window !== 'undefined') {
+			localStorage.setItem('scrollMode', scrollMode);
+		}
 		currentScrollIndex = 0;
 		if (autoScroll) {
 			startAutoScroll();
