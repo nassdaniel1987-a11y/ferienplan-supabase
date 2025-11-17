@@ -128,44 +128,59 @@
 		}
 
 		let isPaused = false;
-		// Berechne Scroll-Geschwindigkeit basierend auf scrollSpeed
-		// scrollSpeed = Zeit für Pause (2s = schnell, 15s = langsam)
-		// Je niedriger scrollSpeed, desto schneller scrollen
-		const pixelsPerSecond = 100 / (scrollSpeed / 1000); // Basis: 100px pro Sekunde, angepasst an Speed
-		const scrollStep = Math.max(0.5, pixelsPerSecond / 33); // Pixel pro Frame bei ~33 FPS
+		let lastTimestamp = 0;
+		let animationFrameId = null;
 
-		console.log('🎬 Starte kontinuierliches Scrollen');
-		console.log('⚡ Scroll-Geschwindigkeit:', scrollSpeed, 'ms →', scrollStep.toFixed(2), 'px/frame');
+		// Berechne Scroll-Geschwindigkeit basierend auf scrollSpeed
+		const pixelsPerSecond = 100 / (scrollSpeed / 1000); // Basis: 100px pro Sekunde
+
+		console.log('🎬 Starte kontinuierliches Scrollen (iOS-kompatibel mit RAF)');
+		console.log('⚡ Scroll-Geschwindigkeit:', scrollSpeed, 'ms →', pixelsPerSecond.toFixed(2), 'px/s');
 		console.log('📏 Container Höhe:', scrollContainer.scrollHeight);
 		console.log('📐 Sichtbare Höhe:', scrollContainer.clientHeight);
 		console.log('📊 Scrollbare Distanz:', scrollContainer.scrollHeight - scrollContainer.clientHeight);
+		console.log('🍎 User Agent:', navigator.userAgent.includes('iPad') ? 'iPad' : navigator.userAgent.includes('iPhone') ? 'iPhone' : 'Anderes Gerät');
 
-		scrollInterval = setInterval(() => {
-			if (isPaused) return;
+		function animate(timestamp) {
+			if (!lastTimestamp) lastTimestamp = timestamp;
+			const deltaTime = timestamp - lastTimestamp;
+			lastTimestamp = timestamp;
 
-			// Lese aktuellen Scroll-Stand aus
-			const currentScroll = scrollContainer.scrollTop;
-			const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+			if (!isPaused) {
+				const currentScroll = scrollContainer.scrollTop;
+				const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
 
-			if (currentScroll >= maxScroll - 10) { // 10px Toleranz
-				// Am Ende angekommen - Pause und zurück nach oben
-				console.log('🔄 Ende erreicht - Pause und zurück zum Anfang');
-				isPaused = true;
-
-				setTimeout(() => {
-					scrollContainer.scrollTop = 0;
-					console.log('⬆️ Zurück zum Anfang gesprungen');
+				if (currentScroll >= maxScroll - 10) { // 10px Toleranz
+					// Am Ende angekommen - Pause und zurück nach oben
+					console.log('🔄 Ende erreicht - Pause und zurück zum Anfang');
+					isPaused = true;
 
 					setTimeout(() => {
-						isPaused = false;
-						console.log('▶️ Scrollen fortgesetzt');
-					}, 2000); // 2 Sekunden Pause oben
-				}, 1000); // 1 Sekunde Pause am Ende
-			} else {
-				// Sanft weiterscrollen - erhöhe aktuellen scrollTop
-				scrollContainer.scrollTop = currentScroll + scrollStep;
+						scrollContainer.scrollTop = 0;
+						console.log('⬆️ Zurück zum Anfang gesprungen');
+
+						setTimeout(() => {
+							isPaused = false;
+							lastTimestamp = 0;
+							console.log('▶️ Scrollen fortgesetzt');
+						}, 2000); // 2 Sekunden Pause oben
+					}, 1000); // 1 Sekunde Pause am Ende
+				} else {
+					// Berechne scroll basierend auf verstrichener Zeit
+					const scrollAmount = (pixelsPerSecond * deltaTime) / 1000;
+					scrollContainer.scrollTop = currentScroll + scrollAmount;
+				}
 			}
-		}, 30); // ~33 FPS für flüssige Animation
+
+			// Nächsten Frame anfordern
+			animationFrameId = requestAnimationFrame(animate);
+		}
+
+		// Starte die Animation
+		animationFrameId = requestAnimationFrame(animate);
+
+		// Speichere die ID für späteres Stoppen
+		scrollInterval = animationFrameId;
 	}
 
 	function startCardScroll() {
@@ -199,8 +214,14 @@
 
 	function stopAutoScroll() {
 		if (scrollInterval) {
-			clearInterval(scrollInterval);
+			// Unterstütze beide: RAF und Interval (für Card-Modus)
+			if (scrollType === 'continuous') {
+				cancelAnimationFrame(scrollInterval);
+			} else {
+				clearInterval(scrollInterval);
+			}
 			scrollInterval = null;
+			console.log('⏹️ AutoScroll gestoppt');
 		}
 	}
 
@@ -868,13 +889,13 @@
 
 	h1 {
 		margin: 0;
-		font-size: 2.5rem; /* Kleiner - wird auf TV größer */
+		font-size: 1.5rem; /* Sehr klein für TV-Spiegelung */
 		font-weight: 700;
 		text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
 	}
 
 	.current-time {
-		font-size: 2rem; /* Kleiner - wird auf TV größer */
+		font-size: 1.2rem; /* Sehr klein für TV-Spiegelung */
 		font-weight: 600;
 		font-variant-numeric: tabular-nums;
 		text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
@@ -889,18 +910,21 @@
 		overflow-y: auto;
 		overflow-x: hidden;
 		scroll-behavior: smooth;
+		/* iOS Safari Optimierungen */
+		-webkit-overflow-scrolling: touch;
+		touch-action: pan-y; /* Erlaube vertikales Scrollen auf Touch-Geräten */
 	}
 
 	.days-container {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 3rem;
+		gap: 1.5rem; /* Viel weniger Abstand */
 	}
 
 	.day-section {
 		background: rgba(255, 255, 255, 0.15);
-		border-radius: 16px; /* Kleiner */
-		padding: 1.5rem; /* Weniger Padding - mehr Platz */
+		border-radius: 12px; /* Kompakt */
+		padding: 0.75rem; /* Minimal Padding für mehr Inhalt */
 		backdrop-filter: blur(10px);
 		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 		border: 2px solid rgba(255, 255, 255, 0.2);
@@ -915,21 +939,21 @@
 	}
 
 	.day-header {
-		margin-bottom: 1.25rem; /* Weniger Abstand */
-		padding-bottom: 1rem;
+		margin-bottom: 0.75rem; /* Minimal Abstand */
+		padding-bottom: 0.5rem;
 		border-bottom: 2px solid rgba(255, 255, 255, 0.3);
 	}
 
 	.day-header h2 {
-		margin: 0 0 0.5rem 0;
-		font-size: 2rem; /* Kleiner - wird auf TV größer */
+		margin: 0 0 0.25rem 0;
+		font-size: 1.2rem; /* Sehr klein für TV-Spiegelung */
 		font-weight: 700;
 		text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.3);
 	}
 
 	.day-header .date {
 		margin: 0;
-		font-size: 1.3rem; /* Kleiner - wird auf TV größer */
+		font-size: 0.9rem; /* Sehr klein für TV-Spiegelung */
 		opacity: 0.9;
 		font-weight: 500;
 	}
@@ -937,7 +961,7 @@
 	.angebote-grid {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem; /* Weniger Abstand - mehr Karten sichtbar */
+		gap: 0.5rem; /* Minimal Abstand für maximalen Inhalt */
 	}
 
 	.no-angebote {
@@ -958,7 +982,7 @@
 
 	.angebot-card {
 		background: rgba(255, 255, 255, 0.95);
-		border-radius: 12px; /* Kleiner - kompakter */
+		border-radius: 8px; /* Sehr kompakt */
 		overflow: hidden;
 		box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
 		transition: transform 0.2s;
@@ -972,7 +996,7 @@
 
 	.angebot-image {
 		width: 100%;
-		height: 150px; /* Kleineres Bild - mehr Inhalt sichtbar */
+		height: 80px; /* Sehr kleines Bild für mehr Karten */
 		overflow: hidden;
 		background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 		display: flex;
@@ -987,42 +1011,42 @@
 	}
 
 	.angebot-content {
-		padding: 1.25rem; /* Weniger Padding - kompakter */
+		padding: 0.75rem; /* Minimal Padding */
 	}
 
 	.angebot-content h3 {
-		margin: 0 0 0.75rem 0;
-		font-size: 1.5rem; /* Kleiner - wird auf TV größer */
+		margin: 0 0 0.5rem 0;
+		font-size: 1rem; /* Sehr klein für TV-Spiegelung */
 		color: #2d3748;
 		line-height: 1.2;
 		font-weight: 700;
 	}
 
 	.beschreibung {
-		margin: 0 0 0.75rem 0;
-		font-size: 1.1rem; /* Kleiner - wird auf TV größer */
+		margin: 0 0 0.5rem 0;
+		font-size: 0.8rem; /* Sehr klein für TV-Spiegelung */
 		color: #4a5568;
-		line-height: 1.5;
+		line-height: 1.4;
 	}
 
 	.angebot-details {
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem; /* Weniger Abstand */
+		gap: 0.3rem; /* Minimal Abstand */
 	}
 
 	.detail {
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
-		font-size: 1.1rem; /* Kleiner - wird auf TV größer */
+		gap: 0.5rem;
+		font-size: 0.8rem; /* Sehr klein für TV-Spiegelung */
 		color: #2d3748;
 		font-weight: 500;
 	}
 
 	.detail .icon {
-		font-size: 1.4rem; /* Kleinere Icons */
-		min-width: 2rem;
+		font-size: 1rem; /* Kleine Icons */
+		min-width: 1.5rem;
 		text-align: center;
 	}
 
