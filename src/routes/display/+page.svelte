@@ -5,20 +5,78 @@
 	let unsubscribe;
 	let currentTime = new Date();
 	let timeInterval;
+	let darkMode = false;
+	let autoScroll = false;
+	let scrollInterval;
+	let currentScrollIndex = 0;
 
 	onMount(() => {
-		unsubscribe = subscribeToFerienplan();
-		
+		// Subscribe to Supabase Realtime
+		subscribeToFerienplan().then(unsub => {
+			unsubscribe = unsub;
+		});
+
 		// Aktualisiere Uhrzeit jede Minute
 		timeInterval = setInterval(() => {
 			currentTime = new Date();
 		}, 60000);
+
+		// Dark Mode aus localStorage laden
+		const savedDarkMode = localStorage.getItem('darkMode');
+		if (savedDarkMode === 'true') {
+			darkMode = true;
+		}
+
+		// AutoScroll aus localStorage laden
+		const savedAutoScroll = localStorage.getItem('autoScroll');
+		if (savedAutoScroll === 'true') {
+			autoScroll = true;
+			startAutoScroll();
+		}
 	});
 
 	onDestroy(() => {
 		if (unsubscribe) unsubscribe();
 		if (timeInterval) clearInterval(timeInterval);
+		if (scrollInterval) clearInterval(scrollInterval);
 	});
+
+	function toggleDarkMode() {
+		darkMode = !darkMode;
+		localStorage.setItem('darkMode', darkMode.toString());
+	}
+
+	function toggleAutoScroll() {
+		autoScroll = !autoScroll;
+		localStorage.setItem('autoScroll', autoScroll.toString());
+
+		if (autoScroll) {
+			startAutoScroll();
+		} else {
+			stopAutoScroll();
+		}
+	}
+
+	function startAutoScroll() {
+		currentScrollIndex = 0;
+		scrollInterval = setInterval(() => {
+			const allCards = document.querySelectorAll('.angebot-card');
+			if (allCards.length > 0) {
+				currentScrollIndex = (currentScrollIndex + 1) % allCards.length;
+				allCards[currentScrollIndex]?.scrollIntoView({
+					behavior: 'smooth',
+					block: 'center'
+				});
+			}
+		}, 5000); // Scroll alle 5 Sekunden
+	}
+
+	function stopAutoScroll() {
+		if (scrollInterval) {
+			clearInterval(scrollInterval);
+			scrollInterval = null;
+		}
+	}
 
 	$: dates = getRelevantDates();
 	$: heuteAngebote = Object.entries($angebote[dates.heute] || {})
@@ -43,7 +101,7 @@
 	}
 </script>
 
-<div class="display-container">
+<div class="display-container" class:dark-mode={darkMode}>
 	{#if $loading}
 		<div class="loading">
 			<div class="spinner"></div>
@@ -53,7 +111,15 @@
 		<header>
 			<div class="header-content">
 				<h1>🌞 Ferienplan 🌞</h1>
-				<div class="current-time">{formatTime(currentTime)}</div>
+				<div class="header-controls">
+					<button class="control-btn" on:click={toggleDarkMode} title="Dark Mode umschalten">
+						{darkMode ? '☀️' : '🌙'}
+					</button>
+					<button class="control-btn" on:click={toggleAutoScroll} class:active={autoScroll} title="Auto-Scroll umschalten">
+						{autoScroll ? '⏸️' : '▶️'}
+					</button>
+					<div class="current-time">{formatTime(currentTime)}</div>
+				</div>
 			</div>
 		</header>
 
@@ -186,11 +252,44 @@
 		font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		overflow-x: hidden;
+		transition: background 0.3s ease;
 	}
 
 	.display-container {
 		min-height: 100vh;
 		color: white;
+		transition: color 0.3s ease;
+	}
+
+	/* Dark Mode */
+	.display-container.dark-mode :global(body) {
+		background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+	}
+
+	.display-container.dark-mode {
+		background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+	}
+
+	.dark-mode .angebot-card {
+		background: rgba(30, 30, 50, 0.95) !important;
+		color: #e0e0e0 !important;
+	}
+
+	.dark-mode .angebot-content h3 {
+		color: #ffffff !important;
+	}
+
+	.dark-mode .beschreibung {
+		color: #b0b0b0 !important;
+	}
+
+	.dark-mode .detail {
+		color: #e0e0e0 !important;
+	}
+
+	.dark-mode .day-section {
+		background: rgba(30, 30, 50, 0.3) !important;
+		border-color: rgba(255, 255, 255, 0.1) !important;
 	}
 
 	.loading {
@@ -228,6 +327,40 @@
 		align-items: center;
 		max-width: 1800px;
 		margin: 0 auto;
+	}
+
+	.header-controls {
+		display: flex;
+		align-items: center;
+		gap: 1.5rem;
+	}
+
+	.control-btn {
+		background: rgba(255, 255, 255, 0.2);
+		border: 2px solid rgba(255, 255, 255, 0.3);
+		color: white;
+		font-size: 2rem;
+		width: 60px;
+		height: 60px;
+		border-radius: 12px;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		backdrop-filter: blur(10px);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.control-btn:hover {
+		background: rgba(255, 255, 255, 0.3);
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+	}
+
+	.control-btn.active {
+		background: rgba(76, 175, 80, 0.4);
+		border-color: rgba(76, 175, 80, 0.6);
+		box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
 	}
 
 	h1 {
