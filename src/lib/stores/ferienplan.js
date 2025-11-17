@@ -49,8 +49,10 @@ async function loadAngeboteForDates(dates) {
 	return grouped;
 }
 
-// Abonniere Ferienplan-Daten mit Realtime
-export async function subscribeToFerienplan() {
+let pollingInterval = null;
+
+// Abonniere Ferienplan-Daten mit Realtime + Polling Fallback
+export async function subscribeToFerienplan(usePolling = true) {
 	const dates = getRelevantDates();
 	const datesToLoad = [dates.heute, dates.morgen];
 
@@ -65,61 +67,116 @@ export async function subscribeToFerienplan() {
 		realtimeChannel = null;
 	}
 
-	console.log('🔌 Starte Realtime Subscription...');
+	// Stop existing polling
+	if (pollingInterval) {
+		clearInterval(pollingInterval);
+		pollingInterval = null;
+	}
 
-	// Realtime Subscription mit verbesserter Fehlerbehandlung
-	realtimeChannel = supabase
-		.channel('ferienplan-changes')
-		.on(
-			'postgres_changes',
-			{
-				event: '*',
-				schema: 'public',
-				table: 'angebote'
-			},
-			async (payload) => {
-				console.log('🔄 Realtime Update empfangen!', {
-					event: payload.eventType,
-					new: payload.new,
-					old: payload.old
-				});
+	console.log('🔌 Starte Daten-Synchronisation...');
 
-				// Reload data on any change
-				const updatedData = await loadAngeboteForDates(datesToLoad);
-				angebote.set(updatedData);
-				console.log('✨ Daten aktualisiert!');
+	// Versuche Realtime zu nutzen (funktioniert nur wenn aktiviert)
+	try {
+		console.log('🔄 Versuche Realtime...');
+		realtimeChannel = supabase
+			.channel('ferienplan-changes')
+			.on(
+				'postgres_changes',
+				{
+					event: '*',
+					schema: 'public',
+					table: 'angebote'
+				},
+				async (payload) => {
+					console.log('🔄 Realtime Update empfangen!', {
+						event: payload.eventType,
+						new: payload.new,
+						old: payload.old
+					});
+
+					// Reload data on any change
+					const updatedData = await loadAngeboteForDates(datesToLoad);
+					angebote.set(updatedData);
+					console.log('✨ Daten via Realtime aktualisiert!');
+				}
+			)
+			.subscribe(async (status, err) => {
+				console.log('📡 Realtime Status:', status);
+
+				if (status === 'SUBSCRIBED') {
+					console.log('✅ Realtime erfolgreich verbunden!');
+					console.log('👂 Höre auf Änderungen in Tabelle "angebote"...');
+					console.log('💡 Polling ist deaktiviert (Realtime aktiv)');
+					// Realtime funktioniert, kein Polling nötig
+					if (pollingInterval) {
+						clearInterval(pollingInterval);
+						pollingInterval = null;
+					}
+				}
+
+				if (status === 'CHANNEL_ERROR') {
+					console.warn('⚠️ Realtime nicht verfügbar');
+					console.log('💡 Nutze Polling als Fallback (alle 5 Sekunden)');
+					// Fallback zu Polling
+					startPolling(datesToLoad);
+				}
+
+				if (status === 'TIMED_OUT') {
+					console.warn('⏱️ Realtime Timeout');
+					console.log('💡 Nutze Polling als Fallback (alle 5 Sekunden)');
+					startPolling(datesToLoad);
+				}
+			});
+	} catch (error) {
+		console.warn('⚠️ Realtime Fehler:', error);
+		console.log('💡 Nutze Polling als Fallback');
+		startPolling(datesToLoad);
+	}
+
+	// Starte Polling als Backup (falls Realtime nicht sofort verbindet)
+	if (usePolling) {
+		console.log('🔄 Starte Polling-Backup (wird gestoppt wenn Realtime verbindet)');
+		setTimeout(() => {
+			// Nur starten wenn Realtime noch nicht verbunden
+			if (!realtimeChannel || realtimeChannel.state !== 'joined') {
+				console.log('💡 Realtime nicht verbunden - aktiviere Polling');
+				startPolling(datesToLoad);
 			}
-		)
-		.subscribe(async (status, err) => {
-			console.log('📡 Realtime Status:', status);
-
-			if (status === 'SUBSCRIBED') {
-				console.log('✅ Realtime erfolgreich verbunden!');
-				console.log('👂 Höre auf Änderungen in Tabelle "angebote"...');
-			}
-
-			if (status === 'CHANNEL_ERROR') {
-				console.error('❌ Realtime Verbindungsfehler:', err);
-				console.error('💡 Überprüfe: Database → Replication → "angebote" muss aktiviert sein!');
-			}
-
-			if (status === 'TIMED_OUT') {
-				console.error('⏱️ Realtime Timeout - Verbindung fehlgeschlagen');
-			}
-
-			if (status === 'CLOSED') {
-				console.warn('🔌 Realtime Verbindung geschlossen');
-			}
-		});
+		}, 3000);
+	}
 
 	// Cleanup-Funktion zurückgeben
 	return () => {
-		console.log('🛑 Realtime Subscription wird beendet...');
+		console.log('🛑 Stoppe Daten-Synchronisation...');
 		if (realtimeChannel) {
 			supabase.removeChannel(realtimeChannel);
 			realtimeChannel = null;
 		}
+		if (pollingInterval) {
+			clearInterval(pollingInterval);
+			pollingInterval = null;
+		}
 	};
+}
+
+// Polling-Mechanismus als Fallback
+function startPolling(datesToLoad) {
+	// Verhindere mehrfache Polling-Intervals
+	if (pollingInterval) {
+		return;
+	}
+
+	console.log('🔁 Polling aktiv: Daten werden alle 5 Sekunden aktualisiert');
+
+	pollingInterval = setInterval(async () => {
+		try {
+			const updatedData = await loadAngeboteForDates(datesToLoad);
+			angebote.set(updatedData);
+			console.log('🔄 Daten via Polling aktualisiert');
+		} catch (error) {
+			console.error('❌ Polling Fehler:', error);
+		}
+	}, 5000); // Alle 5 Sekunden
 }
 
 // Füge neues Angebot hinzu
