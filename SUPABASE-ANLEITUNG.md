@@ -300,6 +300,98 @@ Diese Anleitung führt dich durch JEDEN EINZELNEN KLICK!
 
 ---
 
+## Schritt 1.5.1: Storage Policies einrichten (WICHTIG!)
+
+**Das ist wichtig, damit Bild-Upload funktioniert!**
+
+1. **Im Storage-Bereich bleiben** (solltest du noch sein)
+2. Klicke auf den Bucket **"ferienplan-bilder"**
+3. **Oben im Menü** → Klicke auf **"Policies"** Tab
+4. Du siehst: "No policies created yet"
+
+### Policy 1: Upload erlauben
+
+1. Klicke **"New Policy"**
+2. Wähle Template: **"Allow public uploads"** oder **"Custom policy"**
+
+3. **Wenn "Custom policy":**
+
+   **Policy Name:**
+   ```
+   Public Upload
+   ```
+
+   **Allowed operation:**
+   - ✅ INSERT
+
+   **Target roles:**
+   - `public` oder `anon`
+
+   **Policy definition (WITH CHECK):**
+   ```sql
+   true
+   ```
+
+4. Klicke **"Review"** dann **"Save policy"**
+
+### Policy 2: Download/Lesen erlauben
+
+1. Klicke wieder **"New Policy"**
+2. Wähle Template: **"Allow public access to files"** oder **"Custom policy"**
+
+3. **Wenn "Custom policy":**
+
+   **Policy Name:**
+   ```
+   Public Read
+   ```
+
+   **Allowed operation:**
+   - ✅ SELECT
+
+   **Target roles:**
+   - `public` oder `anon`
+
+   **Policy definition (USING expression):**
+   ```sql
+   true
+   ```
+
+4. Klicke **"Review"** dann **"Save policy"**
+
+### Policy 3: Löschen erlauben (optional)
+
+1. Klicke wieder **"New Policy"**
+
+   **Policy Name:**
+   ```
+   Public Delete
+   ```
+
+   **Allowed operation:**
+   - ✅ DELETE
+
+   **Target roles:**
+   - `public` oder `anon`
+
+   **Policy definition:**
+   ```sql
+   true
+   ```
+
+4. Klicke **"Review"** dann **"Save policy"**
+
+### Überprüfung:
+
+Du solltest jetzt **3 Policies** sehen:
+- ✅ Public Upload (INSERT)
+- ✅ Public Read (SELECT)
+- ✅ Public Delete (DELETE)
+
+✅ **Storage Policies sind eingerichtet - Bild-Upload funktioniert jetzt!**
+
+---
+
 ## Schritt 1.6: Realtime aktivieren (für Live-Updates)
 
 1. **Linke Sidebar** → Klicke auf **"Database"**
@@ -698,11 +790,17 @@ Netlify deployed automatisch!
 2. RLS aktiviert? → Falls ja, deaktivieren für Tests
 3. Environment Variables auf Netlify gesetzt?
 
-## Problem: Bild-Upload schlägt fehl
+## Problem: Bild-Upload schlägt fehl - "new row violates row-level security policy"
 **Lösung:**
 1. Storage Bucket `ferienplan-bilder` existiert?
 2. Ist er "Public"?
-3. Datei unter 5 MB?
+3. **WICHTIG: Storage Policies eingerichtet?**
+   - Gehe zu: Storage → ferienplan-bilder → Policies Tab
+   - Du brauchst mindestens 2 Policies:
+     - Public Upload (INSERT) mit `true`
+     - Public Read (SELECT) mit `true`
+   - Siehe **Schritt 1.5.1** in dieser Anleitung!
+4. Datei unter 5 MB?
 
 ---
 
