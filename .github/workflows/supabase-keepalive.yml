@@ -1,0 +1,57 @@
+name: Supabase Keep-Alive
+
+on:
+  schedule:
+    # Läuft alle 6 Stunden (00:00, 06:00, 12:00, 18:00 UTC)
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Erlaubt manuelles Auslösen
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ping Supabase Datenbank
+        run: |
+          echo "🏓 Pinge Supabase um Projekt aktiv zu halten..."
+
+          # Supabase REST API Query (einfache SELECT)
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/angebote?select=id&limit=1")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+
+          echo "HTTP Status: $HTTP_CODE"
+          echo "Response: $BODY"
+
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Supabase Keep-Alive erfolgreich!"
+            echo "📊 Timestamp: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+          else
+            echo "❌ Fehler beim Keep-Alive Ping"
+            exit 1
+          fi
+
+      - name: Ping Netlify Function (Fallback)
+        if: failure()
+        run: |
+          echo "🔄 Versuche Netlify Function als Fallback..."
+
+          # Netlify Ping Endpoint aufrufen
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            "${{ secrets.NETLIFY_URL }}/.netlify/functions/ping")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n-1)
+
+          echo "HTTP Status: $HTTP_CODE"
+          echo "Response: $BODY"
+
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Netlify Function Ping erfolgreich!"
+          else
+            echo "⚠️ Auch Netlify Function fehlgeschlagen"
+          fi
