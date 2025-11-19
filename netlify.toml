@@ -4,7 +4,3 @@
 
 [functions]
   directory = "netlify/functions"
-
-# Scheduled Functions für Supabase Keep-Alive
-[[plugins]]
-  package = "@netlify/plugin-functions"
