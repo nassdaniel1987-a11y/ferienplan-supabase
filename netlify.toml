@@ -1,3 +1,10 @@
 [build]
   command = "npm run build"
   publish = "build"
+
+[functions]
+  directory = "netlify/functions"
+
+# Scheduled Functions für Supabase Keep-Alive
+[[plugins]]
+  package = "@netlify/plugin-functions"
