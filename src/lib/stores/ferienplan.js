@@ -52,10 +52,75 @@ async function loadAngeboteForDates(dates) {
 let pollingInterval = null;
 let realtimeWorking = false; // Flag ob Realtime tatsächlich Events empfängt
 
+// Lösche alte Angebote (älter als gestern)
+async function deleteOldAngebote() {
+	try {
+		const heute = new Date();
+		const gestern = new Date(heute);
+		gestern.setDate(gestern.getDate() - 1);
+		const gestermFormatted = formatDate(gestern);
+
+		console.log('🗑️ Lösche alte Angebote (älter als', gestermFormatted, ')...');
+
+		// Hole alle alten Angebote mit Bild-URLs (zum Löschen aus Storage)
+		const { data: oldAngebote, error: fetchError } = await supabase
+			.from('angebote')
+			.select('id, bild_url')
+			.lt('datum', gestermFormatted);
+
+		if (fetchError) {
+			console.error('❌ Fehler beim Abrufen alter Angebote:', fetchError);
+			return;
+		}
+
+		if (!oldAngebote || oldAngebote.length === 0) {
+			console.log('✅ Keine alten Angebote zum Löschen gefunden');
+			return;
+		}
+
+		console.log('📋 Gefunden:', oldAngebote.length, 'alte Angebote');
+
+		// Lösche Bilder aus Storage
+		const bildPaths = oldAngebote
+			.filter(a => a.bild_url)
+			.map(a => a.bild_url.split('/').pop());
+
+		if (bildPaths.length > 0) {
+			console.log('🖼️ Lösche', bildPaths.length, 'alte Bilder...');
+			const { error: storageError } = await supabase.storage
+				.from('ferienplan-bilder')
+				.remove(bildPaths);
+
+			if (storageError) {
+				console.warn('⚠️ Einige Bilder konnten nicht gelöscht werden:', storageError);
+			} else {
+				console.log('✅ Bilder gelöscht');
+			}
+		}
+
+		// Lösche Angebote aus Datenbank
+		const { error: deleteError } = await supabase
+			.from('angebote')
+			.delete()
+			.lt('datum', gestermFormatted);
+
+		if (deleteError) {
+			console.error('❌ Fehler beim Löschen der Angebote:', deleteError);
+		} else {
+			console.log('✅', oldAngebote.length, 'alte Angebote erfolgreich gelöscht');
+		}
+	} catch (error) {
+		console.error('❌ Fehler bei der Bereinigung:', error);
+	}
+}
+
 // Abonniere Ferienplan-Daten mit Realtime + Polling Fallback
 export async function subscribeToFerienplan(usePolling = true) {
 	const dates = getRelevantDates();
 	const datesToLoad = [dates.heute, dates.morgen];
+
+	// Lösche alte Angebote beim Start
+	await deleteOldAngebote();
 
 	// Initiales Laden
 	const initialData = await loadAngeboteForDates(datesToLoad);
