@@ -4,18 +4,37 @@
 Supabase Free Tier pausiert Projekte nach **7 Tagen Inaktivität**. Um das zu verhindern, muss regelmäßig eine Datenbankabfrage gemacht werden.
 
 ## Lösung
-Wir nutzen **Netlify Scheduled Functions**, die automatisch alle 6 Stunden eine einfache Query zur Datenbank machen.
+Wir nutzen **2 Methoden** die parallel laufen für maximale Zuverlässigkeit:
+
+1. **GitHub Actions** (primär, empfohlen) - Läuft direkt von GitHub
+2. **Netlify Scheduled Functions** (sekundär) - Backup-Methode
 
 ## Komponenten
 
-### 1. Automatischer Keep-Alive (alle 6 Stunden)
+### 1. GitHub Actions Keep-Alive (primär, empfohlen) ⭐
+**Datei:** `.github/workflows/supabase-keepalive.yml`
+
+- **Läuft automatisch alle 6 Stunden** (00:00, 06:00, 12:00, 18:00 UTC)
+- Macht direkte REST API Query zur Supabase Datenbank
+- **Vollkommen kostenlos** (GitHub Actions Free Tier)
+- **Sehr zuverlässig** - läuft unabhängig vom Hosting
+- Kann **manuell getriggert** werden (workflow_dispatch)
+- Bei Fehler: Fallback auf Netlify Ping Function
+
+**Vorteile:**
+✅ Kostenlos (2000 Minuten/Monat bei GitHub)
+✅ Läuft auch wenn Netlify Probleme hat
+✅ Einfach zu überwachen in GitHub Actions Tab
+✅ Kann manuell getriggert werden
+
+### 2. Netlify Scheduled Functions (sekundär, Backup)
 **Datei:** `netlify/functions/keep-alive.mjs`
 
 - Läuft automatisch alle 6 Stunden (00:00, 06:00, 12:00, 18:00 Uhr)
 - Macht eine einfache SELECT-Query zur `angebote` Tabelle
-- Verhindert dass Supabase das Projekt pausiert
+- Backup falls GitHub Actions ausfällt
 
-### 2. Manueller Test-Endpoint
+### 3. Manueller Test-Endpoint
 **Datei:** `netlify/functions/ping.mjs`
 
 - Kann jederzeit manuell aufgerufen werden
@@ -25,7 +44,21 @@ Wir nutzen **Netlify Scheduled Functions**, die automatisch alle 6 Stunden eine 
 
 ## Aktivierung
 
-### Nach dem Deploy:
+### GitHub Actions Setup (empfohlen):
+
+1. **GitHub Repository öffnen**
+2. **Settings → Secrets and variables → Actions**
+3. **Secrets hinzufügen**:
+   - `SUPABASE_URL`: Deine Supabase URL
+   - `SUPABASE_ANON_KEY`: Dein Supabase Anon Key
+   - `NETLIFY_URL`: Deine Netlify URL (z.B. https://deine-app.netlify.app)
+
+4. **Workflow überprüfen**:
+   - Gehe zu **Actions** Tab
+   - Schaue ob "Supabase Keep-Alive" Workflow erscheint
+   - Du kannst den Workflow manuell mit "Run workflow" testen
+
+### Netlify Functions (optional, Backup):
 
 1. **Netlify Dashboard öffnen**: https://app.netlify.com
 2. **Site auswählen**
@@ -34,11 +67,28 @@ Wir nutzen **Netlify Scheduled Functions**, die automatisch alle 6 Stunden eine 
 
 ### Logs überprüfen:
 
+**GitHub Actions:**
+1. **GitHub Repository → Actions Tab**
+2. **Workflow "Supabase Keep-Alive"** auswählen
+3. Jeder Run wird mit Timestamp und Status angezeigt
+4. Klicke auf einen Run um Details zu sehen
+
+**Netlify Functions:**
 1. **Netlify Dashboard → Functions**
 2. **keep-alive** Function auswählen
 3. Logs zeigen jeden automatischen Aufruf
 
 ## Manueller Test
+
+### GitHub Action manuell triggern:
+
+1. **GitHub Repository → Actions Tab**
+2. **Workflow "Supabase Keep-Alive"** auswählen
+3. **"Run workflow"** Button klicken
+4. Bestätigen
+5. Nach wenigen Sekunden siehst du das Ergebnis
+
+### Netlify Function testen:
 
 Teste die Verbindung mit:
 ```bash
