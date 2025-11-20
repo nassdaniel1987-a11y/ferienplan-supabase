@@ -1042,7 +1042,8 @@
 
 	.angebot-image {
 		width: 100%;
-		height: 80px; /* Sehr kleines Bild für mehr Karten */
+		min-height: 80px; /* Minimum */
+		max-height: 200px; /* Maximum */
 		overflow: hidden;
 		background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 		display: flex;
@@ -1052,8 +1053,9 @@
 
 	.angebot-image img {
 		width: 100%;
-		height: 100%;
-		object-fit: cover; /* Bild füllt Fläche aus - sieht besser aus */
+		height: auto; /* Dynamisch basierend auf Bildverhältnis */
+		max-height: 200px;
+		object-fit: cover; /* Bild füllt Fläche aus */
 	}
 
 	.angebot-content {
@@ -1208,7 +1210,8 @@
 	}
 
 	:global(body.is-ipad) .angebot-image {
-		height: 60px !important;
+		min-height: 60px !important;
+		max-height: 150px !important;
 	}
 
 	:global(body.is-ipad) .angebot-content {

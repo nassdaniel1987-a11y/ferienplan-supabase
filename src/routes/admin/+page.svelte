@@ -29,6 +29,13 @@
 	let showImageSettings = false;
 	let imagePreviewUrl = null; // Für Bildvorschau
 
+	// Bild-Crop Einstellungen
+	let cropSettings = {
+		zoom: 1,
+		offsetX: 0,
+		offsetY: 0
+	};
+
 	onMount(() => {
 		unsubscribe = subscribeToFerienplan();
 		
@@ -82,6 +89,7 @@
 		};
 		editingId = null;
 		imagePreviewUrl = null; // Reset Vorschau
+		cropSettings = { zoom: 1, offsetX: 0, offsetY: 0 }; // Reset Crop
 	}
 
 	function closeForm() {
@@ -163,6 +171,9 @@
 				URL.revokeObjectURL(imagePreviewUrl); // Alte URL freigeben
 			}
 			imagePreviewUrl = URL.createObjectURL(file);
+
+			// Reset Crop-Einstellungen für neues Bild
+			cropSettings = { zoom: 1, offsetX: 0, offsetY: 0 };
 		}
 	}
 
@@ -355,15 +366,78 @@
 						<p class="file-info">📎 {formData.bildFile.name} ({(formData.bildFile.size / 1024 / 1024).toFixed(2)} MB)</p>
 					{/if}
 
-					<!-- Bildvorschau -->
+					<!-- Bildvorschau mit Crop-Tool -->
 					{#if imagePreviewUrl || (editingId && getCurrentAngebot(editingId)?.bild_url)}
 						<div class="image-preview">
-							<p class="preview-label">Vorschau:</p>
-							<img
-								src={imagePreviewUrl || getCurrentAngebot(editingId)?.bild_url}
-								alt="Vorschau"
-								class="preview-image"
-							/>
+							<p class="preview-label">Bildvorschau & Ausschnitt:</p>
+
+							<div class="preview-container">
+								<img
+									src={imagePreviewUrl || getCurrentAngebot(editingId)?.bild_url}
+									alt="Vorschau"
+									class="preview-image"
+									style="
+										transform: scale({cropSettings.zoom}) translate({cropSettings.offsetX}%, {cropSettings.offsetY}%);
+										transform-origin: center center;
+									"
+								/>
+							</div>
+
+							<!-- Crop Controls -->
+							<div class="crop-controls">
+								<div class="crop-control-group">
+									<label for="zoom-slider">
+										🔍 Zoom: {cropSettings.zoom.toFixed(1)}x
+									</label>
+									<input
+										id="zoom-slider"
+										type="range"
+										min="0.5"
+										max="3"
+										step="0.1"
+										bind:value={cropSettings.zoom}
+										class="crop-slider"
+									/>
+								</div>
+
+								<div class="crop-control-group">
+									<label for="offset-x-slider">
+										↔️ Horizontal: {cropSettings.offsetX > 0 ? '+' : ''}{cropSettings.offsetX}%
+									</label>
+									<input
+										id="offset-x-slider"
+										type="range"
+										min="-50"
+										max="50"
+										step="1"
+										bind:value={cropSettings.offsetX}
+										class="crop-slider"
+									/>
+								</div>
+
+								<div class="crop-control-group">
+									<label for="offset-y-slider">
+										↕️ Vertikal: {cropSettings.offsetY > 0 ? '+' : ''}{cropSettings.offsetY}%
+									</label>
+									<input
+										id="offset-y-slider"
+										type="range"
+										min="-50"
+										max="50"
+										step="1"
+										bind:value={cropSettings.offsetY}
+										class="crop-slider"
+									/>
+								</div>
+
+								<button
+									type="button"
+									class="btn-reset-crop"
+									on:click={() => cropSettings = { zoom: 1, offsetX: 0, offsetY: 0 }}
+								>
+									↺ Zurücksetzen
+								</button>
+							</div>
 						</div>
 					{/if}
 
@@ -830,13 +904,97 @@
 		font-size: 0.9rem;
 	}
 
-	.preview-image {
+	.preview-container {
 		width: 100%;
-		max-height: 300px;
-		object-fit: cover; /* Bild füllt Fläche - sieht besser aus */
+		height: 300px;
+		overflow: hidden;
 		background: #ffffff;
 		border-radius: 6px;
+		border: 2px solid #4299e1;
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.preview-image {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		transition: transform 0.1s ease-out;
+	}
+
+	.crop-controls {
+		margin-top: 1rem;
+		padding: 1rem;
+		background: #f7fafc;
+		border-radius: 8px;
+		border: 1px solid #e2e8f0;
+	}
+
+	.crop-control-group {
+		margin-bottom: 1rem;
+	}
+
+	.crop-control-group:last-of-type {
+		margin-bottom: 0;
+	}
+
+	.crop-control-group label {
+		display: block;
+		margin-bottom: 0.5rem;
+		font-weight: 600;
+		color: #2d3748;
+		font-size: 0.9rem;
+	}
+
+	.crop-slider {
+		width: 100%;
+		height: 8px;
+		border-radius: 4px;
+		background: #e2e8f0;
+		outline: none;
+		-webkit-appearance: none;
+		cursor: pointer;
+	}
+
+	.crop-slider::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		appearance: none;
+		width: 20px;
+		height: 20px;
+		border-radius: 50%;
+		background: #4299e1;
+		cursor: pointer;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+	}
+
+	.crop-slider::-moz-range-thumb {
+		width: 20px;
+		height: 20px;
+		border-radius: 50%;
+		background: #4299e1;
+		cursor: pointer;
+		border: none;
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+	}
+
+	.btn-reset-crop {
+		width: 100%;
+		margin-top: 1rem;
+		padding: 0.75rem;
+		background: #edf2f7;
 		border: 1px solid #cbd5e0;
+		border-radius: 6px;
+		font-weight: 600;
+		color: #2d3748;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.btn-reset-crop:hover {
+		background: #e2e8f0;
+		border-color: #a0aec0;
 	}
 
 	.btn-settings {
