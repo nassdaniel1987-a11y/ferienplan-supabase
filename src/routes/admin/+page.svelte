@@ -640,7 +640,7 @@
 	.thumbnail img {
 		width: 100%;
 		height: 100%;
-		object-fit: contain; /* Bild nicht abschneiden */
+		object-fit: cover; /* Bild füllt Fläche - sieht besser aus */
 		background: #ffffff;
 	}
 
@@ -833,7 +833,7 @@
 	.preview-image {
 		width: 100%;
 		max-height: 300px;
-		object-fit: contain; /* Bild wird nicht abgeschnitten */
+		object-fit: cover; /* Bild füllt Fläche - sieht besser aus */
 		background: #ffffff;
 		border-radius: 6px;
 		border: 1px solid #cbd5e0;

@@ -963,8 +963,8 @@
 
 	.days-container {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 1.5rem; /* Viel weniger Abstand */
+		grid-template-columns: 1fr 1fr; /* IMMER nebeneinander */
+		gap: 1.5rem;
 	}
 
 	.day-section {
@@ -1053,7 +1053,7 @@
 	.angebot-image img {
 		width: 100%;
 		height: 100%;
-		object-fit: contain; /* Bild wird nicht abgeschnitten */
+		object-fit: cover; /* Bild füllt Fläche aus - sieht besser aus */
 	}
 
 	.angebot-content {
@@ -1097,11 +1097,7 @@
 	}
 
 	/* iPad & Tablet Optimierungen */
-	@media (max-width: 1400px) {
-		.days-container {
-			grid-template-columns: 1fr;
-		}
-	}
+	/* Entfernt - Tage sollen IMMER nebeneinander sein */
 
 	@media (max-width: 1024px) {
 		h1 {
