@@ -906,7 +906,8 @@
 
 	.preview-container {
 		width: 100%;
-		height: 300px;
+		min-height: 80px; /* Wie auf Display-Kachel */
+		max-height: 200px; /* Wie auf Display-Kachel */
 		overflow: hidden;
 		background: #ffffff;
 		border-radius: 6px;
@@ -919,7 +920,8 @@
 
 	.preview-image {
 		width: 100%;
-		height: 100%;
+		height: auto; /* Dynamisch wie auf Display */
+		max-height: 200px;
 		object-fit: cover;
 		transition: transform 0.1s ease-out;
 	}
