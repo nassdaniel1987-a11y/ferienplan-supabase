@@ -36,13 +36,39 @@
 		offsetY: 0
 	};
 
+	// Display-Einstellungen
+	let showDisplaySettings = false;
+	let fontSizeScale = 1.0; // 0.5 bis 2.0
+
+	// Beispiel-Angebot für Vorschau
+	$: previewAngebot = currentAngebote.length > 0 ? currentAngebote[0][1] : {
+		titel: 'Bastelwerkstatt',
+		beschreibung: 'Kreatives Gestalten mit verschiedenen Materialien',
+		uhrzeit: '14:00',
+		ort: 'Raum 12',
+		betreuer: 'Frau Schmidt',
+		bild_url: null
+	};
+
 	onMount(() => {
 		unsubscribe = subscribeToFerienplan();
-		
+
 		// Setze heutiges Datum als Standard
 		const heute = new Date();
 		selectedDate = heute.toISOString().split('T')[0];
+
+		// Lade Display-Einstellungen aus localStorage
+		const savedFontScale = localStorage.getItem('ferienplan-font-scale');
+		if (savedFontScale) {
+			fontSizeScale = parseFloat(savedFontScale);
+		}
 	});
+
+	function saveFontScale() {
+		localStorage.setItem('ferienplan-font-scale', fontSizeScale.toString());
+		// Trigger Event für Display-Seite falls geöffnet
+		window.dispatchEvent(new CustomEvent('fontScaleChanged', { detail: fontSizeScale }));
+	}
 
 	onDestroy(() => {
 		if (unsubscribe) unsubscribe();
@@ -199,10 +225,93 @@
 <div class="admin-container">
 	<header>
 		<h1>📝 Ferienplan Admin</h1>
-		<a href="/display" target="_blank" class="display-link">
-			🖥️ Display öffnen
-		</a>
+		<div class="header-actions">
+			<button class="display-link btn-settings-toggle" on:click={() => showDisplaySettings = !showDisplaySettings}>
+				⚙️ Display-Einstellungen
+			</button>
+			<a href="/display" target="_blank" class="display-link">
+				🖥️ Display öffnen
+			</a>
+		</div>
 	</header>
+
+	<!-- Display-Einstellungen Panel -->
+	{#if showDisplaySettings}
+		<div class="display-settings-panel">
+			<h2>🖥️ Display-Einstellungen</h2>
+
+			<div class="settings-section">
+				<div class="setting-control">
+					<label for="font-scale">
+						🔤 Schriftgröße: {fontSizeScale.toFixed(1)}x
+					</label>
+					<input
+						id="font-scale"
+						type="range"
+						min="0.5"
+						max="2.0"
+						step="0.1"
+						bind:value={fontSizeScale}
+						on:input={saveFontScale}
+						class="font-scale-slider"
+					/>
+					<div class="scale-labels">
+						<span>Klein (0.5x)</span>
+						<span>Standard (1.0x)</span>
+						<span>Groß (2.0x)</span>
+					</div>
+				</div>
+
+				<button
+					class="btn-reset"
+					on:click={() => { fontSizeScale = 1.0; saveFontScale(); }}
+				>
+					↺ Zurücksetzen
+				</button>
+			</div>
+
+			<div class="preview-section">
+				<h3>📺 Vorschau (wie auf Display)</h3>
+				<div class="display-preview-card" style="--font-scale: {fontSizeScale};">
+					{#if previewAngebot.bild_url}
+						<div class="preview-angebot-image">
+							<img src={previewAngebot.bild_url} alt={previewAngebot.titel} />
+						</div>
+					{/if}
+					<div class="preview-angebot-content">
+						<h3>{previewAngebot.titel}</h3>
+						{#if previewAngebot.beschreibung}
+							<p class="preview-beschreibung">{previewAngebot.beschreibung}</p>
+						{/if}
+						<div class="preview-details">
+							{#if previewAngebot.uhrzeit}
+								<div class="preview-detail">
+									<span class="preview-icon">🕐</span>
+									<span>{previewAngebot.uhrzeit}</span>
+								</div>
+							{/if}
+							{#if previewAngebot.ort}
+								<div class="preview-detail">
+									<span class="preview-icon">📍</span>
+									<span>{previewAngebot.ort}</span>
+								</div>
+							{/if}
+							{#if previewAngebot.betreuer}
+								<div class="preview-detail">
+									<span class="preview-icon">👤</span>
+									<span>{previewAngebot.betreuer}</span>
+								</div>
+							{/if}
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<p class="settings-hint">
+				💡 Die Einstellung wird sofort auf der Display-Seite übernommen
+			</p>
+		</div>
+	{/if}
 
 	{#if $loading}
 		<div class="loading">
@@ -1074,6 +1183,193 @@
 		border-top: 2px solid #e2e8f0;
 	}
 
+	/* Display-Einstellungen Panel */
+	.header-actions {
+		display: flex;
+		gap: 1rem;
+		align-items: center;
+	}
+
+	.btn-settings-toggle {
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.btn-settings-toggle:hover {
+		background: rgba(255, 255, 255, 0.4);
+	}
+
+	.display-settings-panel {
+		max-width: 1200px;
+		margin: 2rem auto;
+		padding: 2rem;
+		background: white;
+		border-radius: 12px;
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+	}
+
+	.display-settings-panel h2 {
+		margin: 0 0 1.5rem 0;
+		font-size: 1.5rem;
+		color: #2d3748;
+	}
+
+	.settings-section {
+		margin-bottom: 2rem;
+		padding: 1.5rem;
+		background: #f7fafc;
+		border-radius: 8px;
+		border: 2px solid #e2e8f0;
+	}
+
+	.setting-control {
+		margin-bottom: 1rem;
+	}
+
+	.setting-control label {
+		display: block;
+		margin-bottom: 0.75rem;
+		font-weight: 600;
+		color: #2d3748;
+		font-size: 1.1rem;
+	}
+
+	.font-scale-slider {
+		width: 100%;
+		height: 10px;
+		border-radius: 5px;
+		background: #e2e8f0;
+		outline: none;
+		-webkit-appearance: none;
+		cursor: pointer;
+		margin-bottom: 0.5rem;
+	}
+
+	.font-scale-slider::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		appearance: none;
+		width: 24px;
+		height: 24px;
+		border-radius: 50%;
+		background: #667eea;
+		cursor: pointer;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+	}
+
+	.font-scale-slider::-moz-range-thumb {
+		width: 24px;
+		height: 24px;
+		border-radius: 50%;
+		background: #667eea;
+		cursor: pointer;
+		border: none;
+		box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+	}
+
+	.scale-labels {
+		display: flex;
+		justify-content: space-between;
+		font-size: 0.8rem;
+		color: #718096;
+		margin-top: 0.25rem;
+	}
+
+	.btn-reset {
+		width: 100%;
+		padding: 0.75rem;
+		background: #edf2f7;
+		border: 1px solid #cbd5e0;
+		border-radius: 6px;
+		font-weight: 600;
+		color: #2d3748;
+		cursor: pointer;
+		transition: all 0.2s;
+	}
+
+	.btn-reset:hover {
+		background: #e2e8f0;
+		border-color: #a0aec0;
+	}
+
+	/* Vorschau-Bereich */
+	.preview-section {
+		margin-top: 2rem;
+	}
+
+	.preview-section h3 {
+		margin: 0 0 1rem 0;
+		font-size: 1.2rem;
+		color: #2d3748;
+	}
+
+	.display-preview-card {
+		background: rgba(255, 255, 255, 0.95);
+		border-radius: 8px;
+		overflow: hidden;
+		box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+		color: #333;
+		max-width: 500px;
+	}
+
+	.preview-angebot-image {
+		width: 100%;
+		min-height: 80px;
+		max-height: 200px;
+		overflow: hidden;
+		background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.preview-angebot-image img {
+		width: 100%;
+		height: auto;
+		max-height: 200px;
+		object-fit: cover;
+	}
+
+	.preview-angebot-content {
+		padding: 0.75rem;
+	}
+
+	.preview-angebot-content h3 {
+		margin: 0 0 0.5rem 0;
+		font-size: calc(1.4rem * var(--font-scale));
+		color: #2d3748;
+		line-height: 1.2;
+		font-weight: 800;
+	}
+
+	.preview-beschreibung {
+		margin: 0 0 0.5rem 0;
+		font-size: calc(1.1rem * var(--font-scale));
+		color: #4a5568;
+		line-height: 1.4;
+		font-weight: 600;
+	}
+
+	.preview-details {
+		display: flex;
+		flex-direction: column;
+		gap: 0.3rem;
+	}
+
+	.preview-detail {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-size: calc(1rem * var(--font-scale));
+		color: #2d3748;
+		font-weight: 700;
+	}
+
+	.preview-icon {
+		font-size: calc(1.2rem * var(--font-scale));
+		min-width: 1.8rem;
+		text-align: center;
+	}
+
 	@media (max-width: 768px) {
 		.angebot-item {
 			flex-direction: column;
@@ -1086,6 +1382,16 @@
 
 		.form-row {
 			grid-template-columns: 1fr;
+		}
+
+		.header-actions {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.display-settings-panel {
+			margin: 1rem;
+			padding: 1.5rem;
 		}
 	}
 </style>
