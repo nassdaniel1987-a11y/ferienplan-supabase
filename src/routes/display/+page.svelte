@@ -18,6 +18,15 @@
 	let scrollMode = 'all'; // all, heute, morgen
 	let scrollType = 'continuous'; // continuous oder cards
 
+	// Schriftgröße-Skalierung
+	let fontSizeScale = 1.0;
+
+	function applyFontScale() {
+		if (typeof document !== 'undefined') {
+			document.documentElement.style.setProperty('--font-scale', fontSizeScale.toString());
+		}
+	}
+
 	onMount(async () => {
 		// Subscribe to Supabase Realtime
 		try {
@@ -40,6 +49,19 @@
 			scrollDirection = localStorage.getItem('scrollDirection') || 'vertical';
 			scrollMode = localStorage.getItem('scrollMode') || 'all';
 			scrollType = localStorage.getItem('scrollType') || 'continuous';
+
+			// Lade Schriftgrößen-Einstellung
+			const savedFontScale = localStorage.getItem('ferienplan-font-scale');
+			if (savedFontScale) {
+				fontSizeScale = parseFloat(savedFontScale);
+				applyFontScale();
+			}
+
+			// Event Listener für Schriftgrößen-Änderung vom Admin
+			window.addEventListener('fontScaleChanged', (e) => {
+				fontSizeScale = e.detail;
+				applyFontScale();
+			});
 
 			// iPad Detection - füge CSS Klasse hinzu
 			const isIPad = navigator.userAgent.includes('iPad') ||
@@ -992,14 +1014,14 @@
 
 	.day-header h2 {
 		margin: 0 0 0.25rem 0;
-		font-size: 1.8rem; /* Größer für bessere Lesbarkeit */
+		font-size: calc(1.8rem * var(--font-scale, 1)); /* Dynamisch skalierbar */
 		font-weight: 800;
 		text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.3);
 	}
 
 	.day-header .date {
 		margin: 0;
-		font-size: 1.2rem; /* Größer für bessere Lesbarkeit */
+		font-size: calc(1.2rem * var(--font-scale, 1)); /* Dynamisch skalierbar */
 		opacity: 0.9;
 		font-weight: 700;
 	}
@@ -1064,7 +1086,7 @@
 
 	.angebot-content h3 {
 		margin: 0 0 0.5rem 0;
-		font-size: 1.4rem; /* Größer für bessere Lesbarkeit */
+		font-size: calc(1.4rem * var(--font-scale, 1)); /* Dynamisch skalierbar */
 		color: #2d3748;
 		line-height: 1.2;
 		font-weight: 800;
@@ -1072,7 +1094,7 @@
 
 	.beschreibung {
 		margin: 0 0 0.5rem 0;
-		font-size: 1.1rem; /* Größer für bessere Lesbarkeit */
+		font-size: calc(1.1rem * var(--font-scale, 1)); /* Dynamisch skalierbar */
 		color: #4a5568;
 		line-height: 1.4;
 		font-weight: 600;
@@ -1088,13 +1110,13 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		font-size: 1rem; /* Größer für bessere Lesbarkeit */
+		font-size: calc(1rem * var(--font-scale, 1)); /* Dynamisch skalierbar */
 		color: #2d3748;
 		font-weight: 700;
 	}
 
 	.detail .icon {
-		font-size: 1.2rem; /* Größere Icons */
+		font-size: calc(1.2rem * var(--font-scale, 1)); /* Dynamisch skalierbar */
 		min-width: 1.8rem;
 		text-align: center;
 	}
@@ -1194,12 +1216,12 @@
 	}
 
 	:global(body.is-ipad) .day-header h2 {
-		font-size: 1.3rem !important;
+		font-size: calc(1.3rem * var(--font-scale, 1)) !important;
 		font-weight: 800 !important;
 	}
 
 	:global(body.is-ipad) .day-header .date {
-		font-size: 0.95rem !important;
+		font-size: calc(0.95rem * var(--font-scale, 1)) !important;
 		font-weight: 700 !important;
 	}
 
@@ -1222,24 +1244,24 @@
 	}
 
 	:global(body.is-ipad) .angebot-content h3 {
-		font-size: 1.1rem !important;
+		font-size: calc(1.1rem * var(--font-scale, 1)) !important;
 		margin-bottom: 0.35rem !important;
 		font-weight: 800 !important;
 	}
 
 	:global(body.is-ipad) .beschreibung {
-		font-size: 0.9rem !important;
+		font-size: calc(0.9rem * var(--font-scale, 1)) !important;
 		margin-bottom: 0.35rem !important;
 		font-weight: 600 !important;
 	}
 
 	:global(body.is-ipad) .detail {
-		font-size: 0.85rem !important;
+		font-size: calc(0.85rem * var(--font-scale, 1)) !important;
 		font-weight: 700 !important;
 	}
 
 	:global(body.is-ipad) .detail .icon {
-		font-size: 1rem !important;
+		font-size: calc(1rem * var(--font-scale, 1)) !important;
 		min-width: 1.4rem !important;
 	}
 
