@@ -992,16 +992,16 @@
 
 	.day-header h2 {
 		margin: 0 0 0.25rem 0;
-		font-size: 1.2rem; /* Sehr klein für TV-Spiegelung */
-		font-weight: 700;
+		font-size: 1.8rem; /* Größer für bessere Lesbarkeit */
+		font-weight: 800;
 		text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.3);
 	}
 
 	.day-header .date {
 		margin: 0;
-		font-size: 0.9rem; /* Sehr klein für TV-Spiegelung */
+		font-size: 1.2rem; /* Größer für bessere Lesbarkeit */
 		opacity: 0.9;
-		font-weight: 500;
+		font-weight: 700;
 	}
 
 	.angebote-grid {
@@ -1064,17 +1064,18 @@
 
 	.angebot-content h3 {
 		margin: 0 0 0.5rem 0;
-		font-size: 1rem; /* Sehr klein für TV-Spiegelung */
+		font-size: 1.4rem; /* Größer für bessere Lesbarkeit */
 		color: #2d3748;
 		line-height: 1.2;
-		font-weight: 700;
+		font-weight: 800;
 	}
 
 	.beschreibung {
 		margin: 0 0 0.5rem 0;
-		font-size: 0.8rem; /* Sehr klein für TV-Spiegelung */
+		font-size: 1.1rem; /* Größer für bessere Lesbarkeit */
 		color: #4a5568;
 		line-height: 1.4;
+		font-weight: 600;
 	}
 
 	.angebot-details {
@@ -1087,14 +1088,14 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		font-size: 0.8rem; /* Sehr klein für TV-Spiegelung */
+		font-size: 1rem; /* Größer für bessere Lesbarkeit */
 		color: #2d3748;
-		font-weight: 500;
+		font-weight: 700;
 	}
 
 	.detail .icon {
-		font-size: 1rem; /* Kleine Icons */
-		min-width: 1.5rem;
+		font-size: 1.2rem; /* Größere Icons */
+		min-width: 1.8rem;
 		text-align: center;
 	}
 
@@ -1193,11 +1194,13 @@
 	}
 
 	:global(body.is-ipad) .day-header h2 {
-		font-size: 0.85rem !important;
+		font-size: 1.3rem !important;
+		font-weight: 800 !important;
 	}
 
 	:global(body.is-ipad) .day-header .date {
-		font-size: 0.7rem !important;
+		font-size: 0.95rem !important;
+		font-weight: 700 !important;
 	}
 
 	:global(body.is-ipad) .day-section {
@@ -1219,22 +1222,25 @@
 	}
 
 	:global(body.is-ipad) .angebot-content h3 {
-		font-size: 0.75rem !important;
+		font-size: 1.1rem !important;
 		margin-bottom: 0.35rem !important;
+		font-weight: 800 !important;
 	}
 
 	:global(body.is-ipad) .beschreibung {
-		font-size: 0.65rem !important;
+		font-size: 0.9rem !important;
 		margin-bottom: 0.35rem !important;
+		font-weight: 600 !important;
 	}
 
 	:global(body.is-ipad) .detail {
-		font-size: 0.65rem !important;
+		font-size: 0.85rem !important;
+		font-weight: 700 !important;
 	}
 
 	:global(body.is-ipad) .detail .icon {
-		font-size: 0.8rem !important;
-		min-width: 1.2rem !important;
+		font-size: 1rem !important;
+		min-width: 1.4rem !important;
 	}
 
 	:global(body.is-ipad) .angebot-details {
